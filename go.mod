@@ -1,4 +1,4 @@
-module epixo.net/cpush
+module github.com/cdevr/cpush
 
 go 1.18
 
