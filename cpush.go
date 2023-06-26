@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -17,8 +18,12 @@ import (
 	"golang.org/x/term"
 )
 
-var device = flag.String("device", "", "a device to execute commands on")
+var device = flag.String("device", "", "a device, or list of devices to execute commands on")
 var command = flag.String("cmd", "", "a command to execute")
+
+var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner and login")
+var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
+var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
 
 var username = flag.String("username", "", "username to use for login")
 
@@ -71,6 +76,84 @@ func getPassword(cacheAllowed, clearCache bool) (string, error) {
 	return password, nil
 }
 
+type ThreadSafeBuffer struct {
+	b bytes.Buffer
+	m sync.Mutex
+}
+
+func (b *ThreadSafeBuffer) Read(p []byte) (n int, err error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Read(p)
+}
+
+func (b *ThreadSafeBuffer) Write(p []byte) (n int, err error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Write(p)
+}
+
+func (b *ThreadSafeBuffer) Len() int {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Len()
+}
+
+func (b *ThreadSafeBuffer) Reset() {
+	b.m.Lock()
+	defer b.m.Unlock()
+	b.b.Reset()
+}
+
+func (b *ThreadSafeBuffer) String() string {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.String()
+}
+
+func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
+	detectPrompt := make(chan bool)
+	go func() {
+		start := time.Now()
+		for {
+			if strings.Contains(output.String(), "#") || strings.Contains(output.String(), ">") {
+				close(detectPrompt)
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+
+			// Make sure to stop after 2 seconds.
+			if time.Since(start).Seconds() > 2 {
+				break
+			}
+		}
+	}()
+	select {
+	case <-time.After(2 * time.Second):
+	case <-detectPrompt:
+	}
+}
+
+// Cmd executes a command on a device and returns the output.
+func Cmd() {
+}
+
+// Push pushes a configlet to a device.
+func Push() {
+}
+
+func GetUser() string {
+	cur, err := user.Current()
+	if err != nil {
+		log.Fatalf("Cannot get current user")
+	}
+	username := cur.Username
+	if strings.HasPrefix(username, "adm1-") {
+		username = username[5:]
+	}
+	return username
+}
+
 func main() {
 	flag.Parse()
 
@@ -83,14 +166,12 @@ func main() {
 		return
 	}
 	if *username == "" {
-		log.Printf("you didn't pass in a device")
-		return
+		*username = GetUser()
 	}
 
 	password, err := getPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {
-		log.Printf("error getting password for user: %v")
-		return
+		log.Fatalf("error getting password for user: %v")
 	}
 
 	config := &ssh.ClientConfig{
@@ -107,15 +188,13 @@ func main() {
 	}
 	conn, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
-		log.Printf("failed to connect to router %q: %v", *device, err)
-		return
+		log.Fatalf("failed to connect to router %q: %v", *device, err)
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		log.Printf("failed to get session on router %q: %v", *device, err)
-		return
+		log.Fatalf("failed to get session on router %q: %v", *device, err)
 	}
 	defer session.Close()
 
@@ -139,25 +218,47 @@ func main() {
 		return
 	}
 
-	var buf bytes.Buffer
-	session.Stdout = &buf
+	var output ThreadSafeBuffer
+	session.Stdout = &output
 
-	log.Printf("sending %q", noMore)
+	WaitForPrompt(&output, 2*time.Second)
+	if *suppressBanner {
+		output.Reset()
+	}
+
+	if !*suppressSending {
+		log.Printf("sending %q", noMore)
+	}
 	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
 		log.Printf("failed to run command %q on router %q: %v", noMore, *device, err)
 		return
 	}
-	time.Sleep(200 * time.Millisecond)
-	buf.Reset()
+	if *suppressAdmin {
+		WaitForPrompt(&output, 2*time.Second)
+		output.Reset()
+	}
 
-	log.Printf("sending %q", *command)
-	if _, err := stdinBuf.Write([]byte(*command + "\r\n")); err != nil {
+	if !*suppressSending {
+		log.Printf("sending %q", *command)
+	}
+	if !strings.HasSuffix(*command, "\n") {
+		*command = *command + "\n"
+	}
+	if _, err := stdinBuf.Write([]byte(*command)); err != nil {
 		log.Printf("failed to run command %q on router %q: %v", *command, *device, err)
 		return
 	}
 	time.Sleep(200 * time.Millisecond)
 
-	log.Printf("sending %q", exitCommand)
+	toPrint := ""
+	if *suppressAdmin {
+		WaitForPrompt(&output, 2*time.Second)
+		toPrint = output.String()
+	}
+
+	if !*suppressSending {
+		log.Printf("sending %q", exitCommand)
+	}
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
 		log.Printf("failed to run command %q on router %q: %v", *command, *device, err)
 		return
@@ -166,7 +267,11 @@ func main() {
 	done := make(chan struct{})
 	go func() {
 		session.Wait()
-		fmt.Println(buf.String())
+		if toPrint != "" {
+			fmt.Println(toPrint)
+		} else {
+			fmt.Println(output.String())
+		}
 
 		close(done)
 	}()
