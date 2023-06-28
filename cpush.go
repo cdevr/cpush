@@ -134,8 +134,29 @@ func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
 	}
 }
 
-// Cmd executes a command on a device and returns the output.
-func Cmd() {
+func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
+	detectPrompt := make(chan bool)
+	go func() {
+		start := time.Now()
+		for {
+			if strings.Contains(output.String(), "\n") {
+				close(detectPrompt)
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+
+			// Make sure to stop after 2 seconds.
+			if time.Since(start).Seconds() > 2 {
+				break
+			}
+		}
+	}()
+	select {
+	case <-time.After(2 * time.Second):
+	case <-detectPrompt:
+	}
+}
+
 }
 
 // Push pushes a configlet to a device.
@@ -249,6 +270,10 @@ func main() {
 		return
 	}
 	time.Sleep(200 * time.Millisecond)
+	if *suppressSending {
+		WaitForEnter(&output, 2*time.Second)
+		output.Reset()
+	}
 
 	toPrint := ""
 	if *suppressAdmin {
