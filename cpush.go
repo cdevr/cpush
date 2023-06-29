@@ -157,6 +157,18 @@ func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
 	}
 }
 
+func RemovePromptSuffix(str string) string {
+	lines := strings.Split(str, "\n")
+	if len(lines) == 0 {
+		return str
+	}
+
+	last := len(lines)
+	trim := strings.Trim(lines[last-1], " ")
+	if strings.HasSuffix(trim, "#") || strings.HasSuffix(trim, ">") {
+		last -= 1
+	}
+	return strings.Join(lines[:last], "\n")
 }
 
 // Push pushes a configlet to a device.
@@ -304,6 +316,10 @@ func main() {
 	select {
 	case <-done:
 	case <-time.After(*timeout):
-		log.Printf("timeout hit!")
+		return "", fmt.Errorf("timeout hit!")
+	}
+	return RemovePromptSuffix(result.String()), nil
+}
+
 	}
 }
