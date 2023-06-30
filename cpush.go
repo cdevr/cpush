@@ -321,5 +321,51 @@ func main() {
 	return RemovePromptSuffix(result.String()), nil
 }
 
+type routerOutput struct {
+	router string
+	output string
+}
+
+func CmdDevices(devices []string, username string, password string, cmd string) {
+	var wg sync.WaitGroup
+
+	errors := make(chan error)
+	outputs := make(chan routerOutput)
+	done := make(chan bool)
+
+	for _, d := range devices {
+		wg.Add(1)
+		go func(device string) {
+			defer wg.Done()
+
+			output, err := Cmd(device, username, password, cmd)
+			if err != nil {
+				errors <- fmt.Errorf("failed to execute command %q on device %q: %v", cmd, device, err)
+			}
+			outputs <- routerOutput{device, output}
+		}(d)
+	}
+
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+
+	allDone := false
+	for !allDone {
+		select {
+		case err := <-errors:
+			fmt.Printf("error: %v\n", err)
+		case output := <-outputs:
+			lines := strings.Split(output.output, "\n")
+			for _, line := range lines {
+				fmt.Printf("%s: %s\n", output.router, line)
+			}
+		case <-done:
+			allDone = true
+		}
+	}
+}
+
 	}
 }
