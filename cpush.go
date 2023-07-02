@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -18,7 +19,10 @@ import (
 	"golang.org/x/term"
 )
 
-var device = flag.String("device", "", "a device, or list of devices to execute commands on")
+var device = flag.String("device", "", "a device to execute commands on")
+var deviceFile = flag.String("devicefile", "", "file with a list of device to execute commands on. One device per line")
+var deviceStdIn = flag.Bool("devicestdin", false, "read list of devices from stdin (don't forget to CTRL-D, or provide EOF)")
+var deviceList = flag.String("devices", "", "comma-separated list of routers")
 var command = flag.String("cmd", "", "a command to execute")
 
 var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner and login")
@@ -187,47 +191,31 @@ func GetUser() string {
 	return username
 }
 
-func main() {
-	flag.Parse()
-
-	if *device == "" {
-		log.Printf("you didn't pass in a device")
-		return
-	}
-	if *command == "" {
-		log.Printf("you didn't pass in a device")
-		return
-	}
-	if *username == "" {
-		*username = GetUser()
-	}
-
-	password, err := getPassword(*cacheAllowed, *clearPwCache)
-	if err != nil {
-		log.Fatalf("error getting password for user: %v")
-	}
+// Cmd executes a command on a device and returns the output.
+func Cmd(device string, username string, password string, cmd string) (string, error) {
+	var result bytes.Buffer
 
 	config := &ssh.ClientConfig{
-		User: *username,
+		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	addr := *device
+	addr := device
 	if !strings.Contains(addr, ":") {
 		addr = addr + ":22"
 	}
 	conn, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
-		log.Fatalf("failed to connect to router %q: %v", *device, err)
+		return "", fmt.Errorf("failed to connect to router %q: %v", device, err)
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		log.Fatalf("failed to get session on router %q: %v", *device, err)
+		return "", fmt.Errorf("failed to get session on router %q: %v", device, err)
 	}
 	defer session.Close()
 
@@ -236,19 +224,16 @@ func main() {
 	}
 
 	if err := session.RequestPty("xterm", 50, 80, modes); err != nil {
-		log.Printf("failed to get pty on router %q: %v", *device, err)
-		return
+		return "", fmt.Errorf("failed to get pty on router %q: %v", device, err)
 	}
 
 	stdinBuf, err := session.StdinPipe()
 	if err != nil {
-		log.Printf("failed to get stdin connected to remote host %q: %v", *device, err)
-		return
+		return "", fmt.Errorf("failed to get stdin connected to remote host %q: %v", device, err)
 	}
 
 	if err := session.Shell(); err != nil {
-		log.Printf("failed to get shell on router %q: %v", *device, err)
-		return
+		return "", fmt.Errorf("failed to get shell on router %q: %v", device, err)
 	}
 
 	var output ThreadSafeBuffer
@@ -260,11 +245,10 @@ func main() {
 	}
 
 	if !*suppressSending {
-		log.Printf("sending %q", noMore)
+		fmt.Fprintf(&result, "sending %q", noMore)
 	}
 	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
-		log.Printf("failed to run command %q on router %q: %v", noMore, *device, err)
-		return
+		return "", fmt.Errorf("failed to run command %q on router %q: %v", noMore, device, err)
 	}
 	if *suppressAdmin {
 		WaitForPrompt(&output, 2*time.Second)
@@ -272,14 +256,13 @@ func main() {
 	}
 
 	if !*suppressSending {
-		log.Printf("sending %q", *command)
+		fmt.Fprintf(&result, "sending %q", *command)
 	}
 	if !strings.HasSuffix(*command, "\n") {
 		*command = *command + "\n"
 	}
 	if _, err := stdinBuf.Write([]byte(*command)); err != nil {
-		log.Printf("failed to run command %q on router %q: %v", *command, *device, err)
-		return
+		return "", fmt.Errorf("failed to run command %q on router %q: %v", command, device, err)
 	}
 	time.Sleep(200 * time.Millisecond)
 	if *suppressSending {
@@ -294,20 +277,19 @@ func main() {
 	}
 
 	if !*suppressSending {
-		log.Printf("sending %q", exitCommand)
+		fmt.Fprintf(&result, "sending %q", exitCommand)
 	}
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
-		log.Printf("failed to run command %q on router %q: %v", *command, *device, err)
-		return
+		return "", fmt.Errorf("failed to run command %q on router %q: %v", command, device, err)
 	}
 
 	done := make(chan struct{})
 	go func() {
 		session.Wait()
 		if toPrint != "" {
-			fmt.Println(toPrint)
+			fmt.Fprintf(&result, "%s", toPrint)
 		} else {
-			fmt.Println(output.String())
+			fmt.Fprintf(&result, "%s", output.String())
 		}
 
 		close(done)
@@ -320,6 +302,8 @@ func main() {
 	}
 	return RemovePromptSuffix(result.String()), nil
 }
+
+// CmdDevices executes a command on many devices, prints the output.
 
 type routerOutput struct {
 	router string
@@ -367,5 +351,51 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 	}
 }
 
+func main() {
+	flag.Parse()
+
+	if *device == "" && *deviceList == "" && *deviceFile == "" && *deviceStdIn == false {
+		log.Printf("you didn't pass in a device")
+		return
+	}
+	if *command == "" {
+		log.Printf("you didn't pass in a device")
+		return
+	}
+	if *username == "" {
+		*username = GetUser()
+	}
+
+	password, err := getPassword(*cacheAllowed, *clearPwCache)
+	if err != nil {
+		log.Fatalf("error getting password for user: %v")
+	}
+
+	if *device != "" {
+		output, err := Cmd(*device, *username, password, *command)
+		if err != nil {
+			log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
+		}
+		fmt.Printf("%s\n", output)
+	} else if *deviceList != "" {
+		devices := strings.Split(*deviceList, ",")
+
+		CmdDevices(devices, *username, password, *command)
+	} else if *deviceFile != "" {
+		fileLines, err := ioutil.ReadFile(*deviceFile)
+		if err != nil {
+			log.Fatalf("failed to read device file %q: %v", *deviceFile, err)
+		}
+		devices := strings.Split(string(fileLines), "\n")
+
+		CmdDevices(devices, *username, password, *command)
+	} else if *deviceStdIn {
+		fileLines, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatalf("failed to read devices from stdin %q: %v", *deviceFile, err)
+		}
+		devices := strings.Split(string(fileLines), "\n")
+
+		CmdDevices(devices, *username, password, *command)
 	}
 }
