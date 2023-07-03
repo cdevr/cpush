@@ -39,8 +39,8 @@ var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cac
 const noMore = "terminal length 0" // Command to disable "more" prompt on cisco routers
 const exitCommand = "exit"         // Command to disable "more" prompt on cisco routers
 
-// getPassword gets the password, or reads the cached password from /dev/shm.
-func getPassword(cacheAllowed, clearCache bool) (string, error) {
+// GetPassword gets the password, or reads the cached password from /dev/shm.
+func GetPassword(cacheAllowed, clearCache bool) (string, error) {
 	user, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("Unable to get current username: %w", err)
@@ -366,7 +366,7 @@ func main() {
 		*username = GetUser()
 	}
 
-	password, err := getPassword(*cacheAllowed, *clearPwCache)
+	password, err := GetPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {
 		log.Fatalf("error getting password for user: %v")
 	}
