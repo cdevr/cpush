@@ -28,6 +28,7 @@ var command = flag.String("cmd", "", "a command to execute")
 var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner and login")
 var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
 var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
+var showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
 
 var username = flag.String("username", "", "username to use for login")
 
@@ -343,7 +344,11 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 		case output := <-outputs:
 			lines := strings.Split(output.output, "\n")
 			for _, line := range lines {
-				fmt.Printf("%s: %s\n", output.router, line)
+				if *showDeviceName {
+					fmt.Printf("%s: %s\n", output.router, line)
+				} else {
+					fmt.Printf("%s\n", line)
+				}
 			}
 		case <-done:
 			allDone = true
