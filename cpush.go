@@ -323,11 +323,23 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 		go func(device string) {
 			defer wg.Done()
 
-			output, err := Cmd(device, username, password, cmd)
-			if err != nil {
-				errors <- fmt.Errorf("failed to execute command %q on device %q: %v", cmd, device, err)
+			var output string
+			var err error
+			done := make(chan bool)
+			go func() {
+				output, err = Cmd(device, username, password, cmd)
+				if err != nil {
+					errors <- fmt.Errorf("failed to execute command %q on device %q: %v", cmd, device, err)
+				}
+				done <- true
+			}()
+
+			select {
+			case <-done:
+				outputs <- routerOutput{device, output}
+			case <-time.After(*timeout):
+				errors <- fmt.Errorf("router %q hit timeout after %v", device, *timeout)
 			}
-			outputs <- routerOutput{device, output}
 		}(d)
 	}
 
