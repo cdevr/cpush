@@ -354,9 +354,8 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 func main() {
 	flag.Parse()
 
-	if *device == "" && *deviceList == "" && *deviceFile == "" && *deviceStdIn == false {
-		log.Printf("you didn't pass in a device")
-		return
+	if *device == "" && *deviceList == "" && *deviceFile == "" {
+		*deviceStdIn = true
 	}
 	if *command == "" {
 		log.Printf("you didn't pass in a device")
