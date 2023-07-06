@@ -414,4 +414,5 @@ func main() {
 
 		CmdDevices(devices, *username, password, *command)
 	}
+	os.Exit(0)
 }
