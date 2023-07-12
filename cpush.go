@@ -386,6 +386,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("error getting password for user: %v")
 	}
+	if *clearPwCache {
+		return
+	}
 
 	if *device != "" {
 		output, err := Cmd(*device, *username, password, *command)
