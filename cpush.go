@@ -263,7 +263,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 		*command = *command + "\n"
 	}
 	if _, err := stdinBuf.Write([]byte(*command)); err != nil {
-		return "", fmt.Errorf("failed to run command %q on router %q: %v", command, device, err)
+		return "", fmt.Errorf("failed to run command %q on router %q: %v", *command, device, err)
 	}
 	time.Sleep(200 * time.Millisecond)
 	if *suppressSending {
@@ -281,7 +281,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 		fmt.Fprintf(&result, "sending %q", exitCommand)
 	}
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
-		return "", fmt.Errorf("failed to run command %q on router %q: %v", command, device, err)
+		return "", fmt.Errorf("failed to run command %q on router %q: %v", *command, device, err)
 	}
 
 	done := make(chan struct{})
@@ -384,7 +384,7 @@ func main() {
 
 	password, err := GetPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {
-		log.Fatalf("error getting password for user: %v")
+		log.Fatalf("error getting password for user: %v", err)
 	}
 	if *clearPwCache {
 		return
