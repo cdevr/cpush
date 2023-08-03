@@ -25,3 +25,14 @@ func TestRemovePromptSuffix(t *testing.T) {
 		}
 	}
 }
+
+func TestSimpleThreadSafeBuffer(t *testing.T) {
+	// Create a Buffer
+	b := ThreadSafeBuffer{}
+
+	b.Write([]byte("boembabies"))
+
+	if b.String() != "boembabies" {
+		t.Errorf("Can't write and read back from ThreadSafeBuffer")
+	}
+}
