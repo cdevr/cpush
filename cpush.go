@@ -210,13 +210,13 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 	}
 	conn, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to router %q: %v", device, err)
+		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		return "", fmt.Errorf("failed to get session on router %q: %v", device, err)
+		return "", fmt.Errorf("failed to get session on device %q: %v", device, err)
 	}
 	defer session.Close()
 
@@ -225,7 +225,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 	}
 
 	if err := session.RequestPty("xterm", 50, 80, modes); err != nil {
-		return "", fmt.Errorf("failed to get pty on router %q: %v", device, err)
+		return "", fmt.Errorf("failed to get pty on device %q: %v", device, err)
 	}
 
 	stdinBuf, err := session.StdinPipe()
@@ -234,7 +234,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 	}
 
 	if err := session.Shell(); err != nil {
-		return "", fmt.Errorf("failed to get shell on router %q: %v", device, err)
+		return "", fmt.Errorf("failed to get shell on device %q: %v", device, err)
 	}
 
 	var output ThreadSafeBuffer
@@ -249,7 +249,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 		fmt.Fprintf(&result, "sending %q", noMore)
 	}
 	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
-		return "", fmt.Errorf("failed to run command %q on router %q: %v", noMore, device, err)
+		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
 	}
 	if *suppressAdmin {
 		WaitForPrompt(&output, 2*time.Second)
@@ -263,7 +263,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 		*command = *command + "\n"
 	}
 	if _, err := stdinBuf.Write([]byte(*command)); err != nil {
-		return "", fmt.Errorf("failed to run command %q on router %q: %v", *command, device, err)
+		return "", fmt.Errorf("failed to run command %q on device %q: %v", *command, device, err)
 	}
 	time.Sleep(200 * time.Millisecond)
 	if *suppressSending {
@@ -281,7 +281,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 		fmt.Fprintf(&result, "sending %q", exitCommand)
 	}
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
-		return "", fmt.Errorf("failed to run command %q on router %q: %v", *command, device, err)
+		return "", fmt.Errorf("failed to run command %q on device %q: %v", *command, device, err)
 	}
 
 	done := make(chan struct{})
