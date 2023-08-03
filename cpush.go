@@ -192,6 +192,15 @@ func GetUser() string {
 	return username
 }
 
+func respondInteractive(password string) (func(user, instruction string, questions []string, echos []bool) ([]string, error)) {
+	return func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+		answers := []string{}
+		for range questions {
+			answers = append(answers, password)
+		}
+		return answers, nil
+	}
+}
 // Cmd executes a command on a device and returns the output.
 func Cmd(device string, username string, password string, cmd string) (string, error) {
 	var result bytes.Buffer
@@ -200,6 +209,7 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
+			ssh.KeyboardInteractive(respondInteractive(password)),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
