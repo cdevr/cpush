@@ -381,6 +381,11 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 func main() {
 	flag.Parse()
 
+	if *device == "" && *command == "" && flag.NArg() >= 2 {
+		*device = flag.Arg(0)
+		*command = strings.Join(flag.Args()[1:], " ")
+	}
+
 	if *device == "" && *deviceList == "" && *deviceFile == "" {
 		*deviceStdIn = true
 	}
