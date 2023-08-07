@@ -381,6 +381,7 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 func main() {
 	flag.Parse()
 
+	// Allow device and command arguments to be passed in as non-args.
 	if *device == "" && *command == "" && flag.NArg() >= 2 {
 		*device = flag.Arg(0)
 		*command = strings.Join(flag.Args()[1:], " ")
