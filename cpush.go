@@ -192,7 +192,7 @@ func GetUser() string {
 	return username
 }
 
-func respondInteractive(password string) (func(user, instruction string, questions []string, echos []bool) ([]string, error)) {
+func respondInteractive(password string) func(user, instruction string, questions []string, echos []bool) ([]string, error) {
 	return func(user, instruction string, questions []string, echos []bool) ([]string, error) {
 		answers := []string{}
 		for range questions {
@@ -201,6 +201,7 @@ func respondInteractive(password string) (func(user, instruction string, questio
 		return answers, nil
 	}
 }
+
 // Cmd executes a command on a device and returns the output.
 func Cmd(device string, username string, password string, cmd string) (string, error) {
 	var result bytes.Buffer
@@ -381,6 +382,21 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 func main() {
 	flag.Parse()
 
+	if flag.NArg()+flag.NFlag() == 0 {
+		fmt.Printf(`cpush tool to send commands to Cisco and Juniper routers
+	
+Simplest usage:
+
+	cpush device command goes here.
+
+Example:
+
+	cpush rtr1 show version
+
+Other flags are:`)
+		flag.Usage()
+		return
+	}
 	// Allow device and command arguments to be passed in as non-args.
 	if *device == "" && *command == "" && flag.NArg() >= 2 {
 		*device = flag.Arg(0)
