@@ -37,8 +37,8 @@ var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command"
 var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
 
-const noMore = "terminal length 0" // Command to disable "more" prompt on cisco routers
-const exitCommand = "exit"         // Command to disable "more" prompt on cisco routers
+const noMore = "terminal length 0" // Command to disable "more" prompt on cisco routers.
+const exitCommand = "exit"         // Command to disable "more" prompt on cisco routers.
 
 // GetPassword gets the password, or reads the cached password from /dev/shm.
 func GetPassword(cacheAllowed, clearCache bool) (string, error) {
