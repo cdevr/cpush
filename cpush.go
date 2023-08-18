@@ -315,13 +315,12 @@ func Cmd(device string, username string, password string, cmd string) (string, e
 	return RemovePromptSuffix(result.String()), nil
 }
 
-// CmdDevices executes a command on many devices, prints the output.
-
 type routerOutput struct {
 	router string
 	output string
 }
 
+// CmdDevices executes a command on many devices, prints the output.
 func CmdDevices(devices []string, username string, password string, cmd string) {
 	var wg sync.WaitGroup
 
