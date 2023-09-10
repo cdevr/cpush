@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -29,6 +28,7 @@ var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner
 var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
 var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
 var showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
+var logOutputTemplate = flag.String("logOutput", "", "template for files to save the output in. %s gets replaced with the device name")
 
 var username = flag.String("username", "", "username to use for login")
 
@@ -55,7 +55,7 @@ func GetPassword(cacheAllowed, clearCache bool) (string, error) {
 		}
 	}
 
-	cachedPw, err := ioutil.ReadFile(fn)
+	cachedPw, err := os.ReadFile(fn)
 	if err == nil {
 		pw, err := base64.StdEncoding.DecodeString(string(cachedPw))
 		if err == nil {
@@ -72,7 +72,7 @@ func GetPassword(cacheAllowed, clearCache bool) (string, error) {
 	password := string(bytePassword)
 
 	cachedPw = []byte(base64.StdEncoding.EncodeToString([]byte(password)))
-	err = ioutil.WriteFile(fn, cachedPw, 0600)
+	err = os.WriteFile(fn, cachedPw, 0600)
 	if err != nil {
 		// Non-fatal error.
 		log.Printf("failed to cache password in %q: %v", fn, err)
@@ -366,6 +366,10 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 		case output := <-outputs:
 			lines := strings.Split(output.output, "\n")
 			for _, line := range lines {
+				if *logOutputTemplate != "" {
+					fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
+					AppendToFile(fn, line)
+				}
 				if *showDeviceName {
 					fmt.Printf("%s: %s\n", output.router, line)
 				} else {
@@ -376,6 +380,23 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 			allDone = true
 		}
 	}
+}
+
+func AppendToFile(filename, text string) error {
+	// Open the file in append mode with write-only permissions
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the string to the file
+	_, err = file.WriteString(text)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {
@@ -432,7 +453,7 @@ Other flags are:`)
 
 		CmdDevices(devices, *username, password, *command)
 	} else if *deviceFile != "" {
-		fileLines, err := ioutil.ReadFile(*deviceFile)
+		fileLines, err := os.ReadFile(*deviceFile)
 		if err != nil {
 			log.Fatalf("failed to read device file %q: %v", *deviceFile, err)
 		}
