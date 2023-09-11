@@ -368,7 +368,10 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 			for _, line := range lines {
 				if *logOutputTemplate != "" {
 					fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
-					AppendToFile(fn, line)
+					err := AppendToFile(fn, line)
+					if err != nil {
+						log.Printf("failed to save output for router %q: %v", output.router, err)
+					}
 				}
 				if *showDeviceName {
 					fmt.Printf("%s: %s\n", output.router, line)
