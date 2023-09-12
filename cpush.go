@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cdevr/cpush/utils"
+
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
@@ -369,7 +371,7 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 			for _, line := range lines {
 				if *logOutputTemplate != "" {
 					fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
-					err := AppendToFile(fn, line)
+					err := utils.AppendToFile(fn, line)
 					if err != nil {
 						log.Printf("failed to save output for router %q: %v", output.router, err)
 					}
@@ -384,23 +386,6 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 			allDone = true
 		}
 	}
-}
-
-func AppendToFile(filename, text string) error {
-	// Open the file in append mode with write-only permissions
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the string to the file
-	_, err = file.WriteString(text)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func main() {
