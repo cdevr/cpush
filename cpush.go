@@ -121,7 +121,8 @@ func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
 	go func() {
 		start := time.Now()
 		for {
-			if strings.Contains(output.String(), "#") || strings.Contains(output.String(), ">") {
+			ostr := output.String()
+			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") {
 				close(detectPrompt)
 				break
 			}
