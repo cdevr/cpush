@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -11,13 +10,12 @@ import (
 	"os/user"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
+	"github.com/cdevr/cpush/pwcache"
 	"github.com/cdevr/cpush/utils"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/term"
 )
 
 var device = flag.String("device", "", "a device to execute commands on")
@@ -41,47 +39,6 @@ var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cac
 
 const noMore = "terminal length 0" // Command to disable "more" prompt on cisco routers.
 const exitCommand = "exit"         // Command to disable "more" prompt on cisco routers.
-
-// GetPassword gets the password, or reads the cached password from /dev/shm.
-func GetPassword(cacheAllowed, clearCache bool) (string, error) {
-	user, err := user.Current()
-	if err != nil {
-		return "", fmt.Errorf("Unable to get current username: %w", err)
-	}
-	fn := fmt.Sprintf("/dev/shm/gpcache-%s", user.Username)
-
-	if clearCache {
-		err := os.Remove(fn)
-		if err != nil {
-			return "", fmt.Errorf("failed to delete password cache in %q: %w", fn, err)
-		}
-	}
-
-	cachedPw, err := os.ReadFile(fn)
-	if err == nil {
-		pw, err := base64.StdEncoding.DecodeString(string(cachedPw))
-		if err == nil {
-			return string(pw), nil
-		}
-	}
-
-	fmt.Print("Please enter the password to use: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Println()
-	if err != nil {
-		return "", fmt.Errorf("failed to read password: %w", err)
-	}
-	password := string(bytePassword)
-
-	cachedPw = []byte(base64.StdEncoding.EncodeToString([]byte(password)))
-	err = os.WriteFile(fn, cachedPw, 0600)
-	if err != nil {
-		// Non-fatal error.
-		log.Printf("failed to cache password in %q: %v", fn, err)
-	}
-
-	return password, nil
-}
 
 type ThreadSafeBuffer struct {
 	b bytes.Buffer
@@ -423,7 +380,7 @@ Other flags are:`)
 		*username = GetUser()
 	}
 
-	password, err := GetPassword(*cacheAllowed, *clearPwCache)
+	password, err := pwcache.GetPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {
 		log.Fatalf("error getting password for user: %v", err)
 	}
