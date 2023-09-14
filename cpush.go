@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -12,10 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/pwcache"
 	"github.com/cdevr/cpush/utils"
-
-	"golang.org/x/crypto/ssh"
 )
 
 var device = flag.String("device", "", "a device to execute commands on")
@@ -37,109 +35,6 @@ var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command"
 var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
 
-const noMore = "terminal length 0" // Command to disable "more" prompt on cisco routers.
-const exitCommand = "exit"         // Command to disable "more" prompt on cisco routers.
-
-type ThreadSafeBuffer struct {
-	b bytes.Buffer
-	m sync.Mutex
-}
-
-func (b *ThreadSafeBuffer) Read(p []byte) (n int, err error) {
-	b.m.Lock()
-	defer b.m.Unlock()
-	return b.b.Read(p)
-}
-
-func (b *ThreadSafeBuffer) Write(p []byte) (n int, err error) {
-	b.m.Lock()
-	defer b.m.Unlock()
-	return b.b.Write(p)
-}
-
-func (b *ThreadSafeBuffer) Len() int {
-	b.m.Lock()
-	defer b.m.Unlock()
-	return b.b.Len()
-}
-
-func (b *ThreadSafeBuffer) Reset() {
-	b.m.Lock()
-	defer b.m.Unlock()
-	b.b.Reset()
-}
-
-func (b *ThreadSafeBuffer) String() string {
-	b.m.Lock()
-	defer b.m.Unlock()
-	return b.b.String()
-}
-
-func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
-	detectPrompt := make(chan bool)
-	go func() {
-		start := time.Now()
-		for {
-			ostr := output.String()
-			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") {
-				close(detectPrompt)
-				break
-			}
-			time.Sleep(20 * time.Millisecond)
-
-			// Make sure to stop after 2 seconds.
-			if time.Since(start).Seconds() > 2 {
-				break
-			}
-		}
-	}()
-	select {
-	case <-time.After(2 * time.Second):
-	case <-detectPrompt:
-	}
-}
-
-func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
-	detectPrompt := make(chan bool)
-	go func() {
-		start := time.Now()
-		for {
-			if strings.Contains(output.String(), "\n") {
-				close(detectPrompt)
-				break
-			}
-			time.Sleep(20 * time.Millisecond)
-
-			// Make sure to stop after 2 seconds.
-			if time.Since(start).Seconds() > 2 {
-				break
-			}
-		}
-	}()
-	select {
-	case <-time.After(2 * time.Second):
-	case <-detectPrompt:
-	}
-}
-
-func RemovePromptSuffix(str string) string {
-	lines := strings.Split(str, "\n")
-	if len(lines) == 0 {
-		return str
-	}
-
-	last := len(lines)
-	trim := strings.Trim(lines[last-1], " ")
-	if strings.HasSuffix(trim, "#") || strings.HasSuffix(trim, ">") {
-		last -= 1
-	}
-	return strings.Join(lines[:last], "\n")
-}
-
-// Push pushes a configlet to a device.
-func Push() {
-}
-
 func GetUser() string {
 	cur, err := user.Current()
 	if err != nil {
@@ -152,136 +47,13 @@ func GetUser() string {
 	return username
 }
 
-func respondInteractive(password string) func(user, instruction string, questions []string, echos []bool) ([]string, error) {
-	return func(user, instruction string, questions []string, echos []bool) ([]string, error) {
-		answers := []string{}
-		for range questions {
-			answers = append(answers, password)
-		}
-		return answers, nil
-	}
-}
-
-// Cmd executes a command on a device and returns the output.
-func Cmd(device string, username string, password string, cmd string) (string, error) {
-	var result bytes.Buffer
-
-	config := &ssh.ClientConfig{
-		User: username,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-			ssh.KeyboardInteractive(respondInteractive(password)),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	addr := device
-	if !strings.Contains(addr, ":") {
-		addr = addr + ":22"
-	}
-	conn, err := ssh.Dial("tcp", addr, config)
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
-	}
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-	if err != nil {
-		return "", fmt.Errorf("failed to get session on device %q: %v", device, err)
-	}
-	defer session.Close()
-
-	modes := ssh.TerminalModes{
-		ssh.ECHO: 0,
-	}
-
-	if err := session.RequestPty("xterm", 50, 80, modes); err != nil {
-		return "", fmt.Errorf("failed to get pty on device %q: %v", device, err)
-	}
-
-	stdinBuf, err := session.StdinPipe()
-	if err != nil {
-		return "", fmt.Errorf("failed to get stdin connected to remote host %q: %v", device, err)
-	}
-
-	if err := session.Shell(); err != nil {
-		return "", fmt.Errorf("failed to get shell on device %q: %v", device, err)
-	}
-
-	var output ThreadSafeBuffer
-	session.Stdout = &output
-
-	WaitForPrompt(&output, 2*time.Second)
-	if *suppressBanner {
-		output.Reset()
-	}
-
-	if !*suppressSending {
-		fmt.Fprintf(&result, "sending %q", noMore)
-	}
-	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
-		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
-	}
-	if *suppressAdmin {
-		WaitForPrompt(&output, 2*time.Second)
-		output.Reset()
-	}
-
-	if !*suppressSending {
-		fmt.Fprintf(&result, "sending %q", *command)
-	}
-	if !strings.HasSuffix(*command, "\n") {
-		*command = *command + "\n"
-	}
-	if _, err := stdinBuf.Write([]byte(*command)); err != nil {
-		return "", fmt.Errorf("failed to run command %q on device %q: %v", *command, device, err)
-	}
-	time.Sleep(200 * time.Millisecond)
-	if *suppressSending {
-		WaitForEnter(&output, 2*time.Second)
-		output.Reset()
-	}
-
-	toPrint := ""
-	if *suppressAdmin {
-		WaitForPrompt(&output, 2*time.Second)
-		toPrint = output.String()
-	}
-
-	if !*suppressSending {
-		fmt.Fprintf(&result, "sending %q", exitCommand)
-	}
-	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
-		return "", fmt.Errorf("failed to run command %q on device %q: %v", *command, device, err)
-	}
-
-	done := make(chan struct{})
-	go func() {
-		session.Wait()
-		if toPrint != "" {
-			fmt.Fprintf(&result, "%s", toPrint)
-		} else {
-			fmt.Fprintf(&result, "%s", output.String())
-		}
-
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(*timeout):
-		return "", fmt.Errorf("timeout hit!")
-	}
-	return RemovePromptSuffix(result.String()), nil
-}
-
 type routerOutput struct {
 	router string
 	output string
 }
 
 // CmdDevices executes a command on many devices, prints the output.
-func CmdDevices(devices []string, username string, password string, cmd string) {
+func CmdDevices(opts *cisco.Options, devices []string, username string, password string, cmd string) {
 	var wg sync.WaitGroup
 
 	errors := make(chan error)
@@ -297,7 +69,7 @@ func CmdDevices(devices []string, username string, password string, cmd string) 
 			var err error
 			done := make(chan bool)
 			go func() {
-				output, err = Cmd(device, username, password, cmd)
+				output, err = cisco.Cmd(opts, device, username, password, cmd)
 				if err != nil {
 					errors <- fmt.Errorf("failed to execute command %q on device %q: %v", cmd, device, err)
 				}
@@ -380,6 +152,9 @@ Other flags are:`)
 		*username = GetUser()
 	}
 
+	opts := cisco.NewOptions()
+	opts.SuppressAdmin(*suppressAdmin).SuppressBanner(*suppressBanner).SuppressSending(*suppressSending).Timeout(*timeout)
+
 	password, err := pwcache.GetPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {
 		log.Fatalf("error getting password for user: %v", err)
@@ -389,7 +164,7 @@ Other flags are:`)
 	}
 
 	if *device != "" {
-		output, err := Cmd(*device, *username, password, *command)
+		output, err := cisco.Cmd(opts, *device, *username, password, *command)
 		if err != nil {
 			log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
 		}
@@ -397,7 +172,7 @@ Other flags are:`)
 	} else if *deviceList != "" {
 		devices := strings.Split(*deviceList, ",")
 
-		CmdDevices(devices, *username, password, *command)
+		CmdDevices(opts, devices, *username, password, *command)
 	} else if *deviceFile != "" {
 		fileLines, err := os.ReadFile(*deviceFile)
 		if err != nil {
@@ -405,7 +180,7 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(devices, *username, password, *command)
+		CmdDevices(opts, devices, *username, password, *command)
 	} else if *deviceStdIn {
 		fileLines, err := io.ReadAll(os.Stdin)
 		if err != nil {
@@ -413,7 +188,7 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(devices, *username, password, *command)
+		CmdDevices(opts, devices, *username, password, *command)
 	}
 	os.Exit(0)
 }

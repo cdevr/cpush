@@ -1,6 +1,10 @@
 package utils
 
-import "os"
+import (
+	"os"
+	"strings"
+	"time"
+)
 
 func AppendToFile(filename, text string) error {
 	// Open the file in append mode with write-only permissions
@@ -17,4 +21,51 @@ func AppendToFile(filename, text string) error {
 	}
 
 	return nil
+}
+
+func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
+	detectPrompt := make(chan bool)
+	go func() {
+		start := time.Now()
+		for {
+			ostr := output.String()
+			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") {
+				close(detectPrompt)
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+
+			// Make sure to stop after 2 seconds.
+			if time.Since(start).Seconds() > 2 {
+				break
+			}
+		}
+	}()
+	select {
+	case <-time.After(timeLimit):
+	case <-detectPrompt:
+	}
+}
+
+func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
+	detectPrompt := make(chan bool)
+	go func() {
+		start := time.Now()
+		for {
+			if strings.Contains(output.String(), "\n") {
+				close(detectPrompt)
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+
+			// Make sure to stop after 2 seconds.
+			if time.Since(start).Seconds() > 2 {
+				break
+			}
+		}
+	}()
+	select {
+	case <-time.After(timeLimit):
+	case <-detectPrompt:
+	}
 }
