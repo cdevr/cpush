@@ -14,6 +14,8 @@ import (
 	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/pwcache"
 	"github.com/cdevr/cpush/utils"
+
+	"golang.org/x/net/proxy"
 )
 
 var device = flag.String("device", "", "a device to execute commands on")
@@ -34,6 +36,8 @@ var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command"
 
 var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
+
+var socks = flag.String("socks", "", "proxy to use")
 
 func GetUser() string {
 	cur, err := user.Current()
@@ -152,8 +156,17 @@ Other flags are:`)
 		*username = GetUser()
 	}
 
+	var dialer proxy.Dialer = proxy.Direct
+	if *socks != "" {
+		var err error
+		dialer, err = proxy.SOCKS5("tcp", *socks, nil, nil)
+		if err != nil {
+			log.Fatalf("failed to dial SOCKS server at %q: %v", *socks, err)
+		}
+	}
+
 	opts := cisco.NewOptions()
-	opts.SuppressAdmin(*suppressAdmin).SuppressBanner(*suppressBanner).SuppressSending(*suppressSending).Timeout(*timeout)
+	opts.SuppressAdmin(*suppressAdmin).SuppressBanner(*suppressBanner).SuppressSending(*suppressSending).Timeout(*timeout).Dialer(dialer.Dial)
 
 	password, err := pwcache.GetPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {

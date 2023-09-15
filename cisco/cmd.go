@@ -58,10 +58,16 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	if !strings.Contains(addr, ":") {
 		addr = addr + ":22"
 	}
-	conn, err := ssh.Dial("tcp", addr, config)
+
+	tcpconn, err := opts.dialer("tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
+	sshconn, chans, reqs, err := ssh.NewClientConn(tcpconn, addr, config)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
+	}
+	conn := ssh.NewClient(sshconn, chans, reqs)
 	defer conn.Close()
 
 	session, err := conn.NewSession()

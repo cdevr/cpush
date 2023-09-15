@@ -1,12 +1,18 @@
 package cisco
 
-import "time"
+import (
+	"net"
+	"time"
+)
+
+type Dialer func(network string, addr string) (net.Conn, error)
 
 type Options struct {
 	suppressBanner  bool
 	suppressSending bool
 	suppressAdmin   bool
 	timeout         time.Duration
+	dialer          Dialer
 }
 
 func NewOptions() *Options {
@@ -32,5 +38,10 @@ func (o *Options) SuppressBanner(v bool) *Options {
 
 func (o *Options) Timeout(t time.Duration) *Options {
 	o.timeout = t
+	return o
+}
+
+func (o *Options) Dialer(d Dialer) *Options {
+	o.dialer = d
 	return o
 }
