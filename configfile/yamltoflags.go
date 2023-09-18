@@ -1,10 +1,11 @@
 package configfile
 
 import (
-	"os"
+	"errors"
 	"flag"
-	"log"
 	"fmt"
+	"log"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,8 +13,7 @@ import (
 func ParseConfigFileToFlagset(fn string, flags *flag.FlagSet) error {
 	yamlData, err := os.ReadFile(fn)
 	// Nonexistent config file is OK.
-	if err == os.ErrNotExist {
-		log.Printf("config file doesn't exist => skipping")
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
