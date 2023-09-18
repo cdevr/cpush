@@ -14,6 +14,7 @@ import (
 	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/pwcache"
 	"github.com/cdevr/cpush/utils"
+	"github.com/cdevr/cpush/configfile"
 
 	"golang.org/x/net/proxy"
 )
@@ -122,6 +123,7 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 }
 
 func main() {
+	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
 
 	if flag.NArg()+flag.NFlag() == 0 {
