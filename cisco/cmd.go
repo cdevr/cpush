@@ -115,8 +115,8 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	if !opts.suppressSending {
 		fmt.Fprintf(&result, "sending %q", cmd)
 	}
-	if !strings.HasSuffix(cmd, "\n") {
-		cmd = cmd + "\n"
+	if !strings.HasSuffix(cmd, "\r\n") {
+		cmd = cmd + "\r\n"
 	}
 	if _, err := stdinBuf.Write([]byte(cmd)); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", cmd, device, err)

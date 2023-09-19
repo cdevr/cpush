@@ -29,14 +29,14 @@ func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
 		start := time.Now()
 		for {
 			ostr := output.String()
-			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") {
+			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") || strings.Contains(ostr, "$") {
 				close(detectPrompt)
 				break
 			}
 			time.Sleep(20 * time.Millisecond)
 
 			// Make sure to stop after 2 seconds.
-			if time.Since(start).Seconds() > 2 {
+			if time.Since(start) > timeLimit {
 				break
 			}
 		}
@@ -59,7 +59,7 @@ func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
 			time.Sleep(20 * time.Millisecond)
 
 			// Make sure to stop after 2 seconds.
-			if time.Since(start).Seconds() > 2 {
+			if time.Since(start) > timeLimit {
 				break
 			}
 		}
