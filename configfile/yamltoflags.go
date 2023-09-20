@@ -6,11 +6,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 func ParseConfigFileToFlagset(fn string, flags *flag.FlagSet) error {
+	if strings.HasPrefix(fn, "~/") {
+		home, _ := os.UserHomeDir()
+		fn = filepath.Join(home, fn[2:])
+	}
 	yamlData, err := os.ReadFile(fn)
 	// Nonexistent config file is OK.
 	if errors.Is(err, os.ErrNotExist) {
