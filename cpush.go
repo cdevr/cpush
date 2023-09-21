@@ -29,7 +29,7 @@ var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner
 var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
 var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
 var showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
-var logOutputTemplate = flag.String("logOutputTemplate", "", "template for files to save the output in. %s gets replaced with the device name")
+var logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
 
 var username = flag.String("username", "", "username to use for login")
 
