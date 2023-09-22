@@ -32,6 +32,7 @@ var push = flag.String("push", "", "something put into the configuration")
 var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner and login")
 var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
 var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
+var suppressOutput = flag.Bool("suppress_output", false, "don't print router output")
 var showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
 var logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
 
@@ -111,16 +112,19 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 			for _, line := range lines {
 				if *logOutputTemplate != "" {
 					fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
-					err := utils.AppendToFile(fn, line)
+					err := utils.AppendToFile(fn, utils.Dos2Unix(line))
 					if err != nil {
 						log.Printf("failed to save output for router %q: %v", output.router, err)
 					}
 				}
-				if *showDeviceName {
-					fmt.Printf("%s: %s\n", output.router, line)
-				} else {
-					fmt.Printf("%s\n", line)
-				}
+
+        if !*suppressOutput {
+          if *showDeviceName {
+            fmt.Printf("%s: %s\n", output.router, line)
+          } else {
+            fmt.Printf("%s\n", line)
+          }
+        }
 			}
 		case <-done:
 			allDone = true
@@ -191,7 +195,7 @@ Other flags are:`)
 	}
 
 	opts := cisco.NewOptions()
-	opts.SuppressAdmin(*suppressAdmin).SuppressBanner(*suppressBanner).SuppressSending(*suppressSending).Timeout(*timeout).Dialer(dialer.Dial)
+	opts.SuppressAdmin(*suppressAdmin).SuppressBanner(*suppressBanner).SuppressSending(*suppressSending).Timeout(*timeout).Dialer(dialer.Dial).SuppressOutput(*suppressOutput)
 
 	password, err := pwcache.GetPassword(*cacheAllowed, *clearPwCache)
 	if err != nil {
@@ -217,12 +221,14 @@ Other flags are:`)
     }
     if *logOutputTemplate != "" {
       fn := strings.ReplaceAll(*logOutputTemplate, "%s", *device)
-      err := utils.AppendToFile(fn, output)
+      err := utils.AppendToFile(fn, utils.Dos2Unix(output))
       if err != nil {
         log.Printf("failed to save output for router %q: %v", *device, err)
       }
     }
-		fmt.Printf("%s\n", output)
+    if !*suppressOutput {
+      fmt.Printf("%s\n", output)
+    }
 	} else if *deviceList != "" {
 		devices := strings.Split(*deviceList, ",")
 

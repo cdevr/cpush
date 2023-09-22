@@ -86,3 +86,7 @@ func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
 	case <-detectPrompt:
 	}
 }
+
+func Dos2Unix(s string) string {
+  return strings.ReplaceAll(s, "\r", "\n")
+}

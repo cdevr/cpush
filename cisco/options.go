@@ -11,6 +11,7 @@ type Options struct {
 	suppressBanner  bool
 	suppressSending bool
 	suppressAdmin   bool
+	suppressOutput  bool
 	timeout         time.Duration
 	dialer          Dialer
 }
@@ -28,6 +29,11 @@ func (o *Options) SuppressSending(v bool) *Options {
 
 func (o *Options) SuppressAdmin(v bool) *Options {
 	o.suppressAdmin = v
+	return o
+}
+
+func (o *Options) SuppressOutput(v bool) *Options {
+	o.suppressOutput = v
 	return o
 }
 
