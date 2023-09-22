@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/user"
+  "runtime"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"golang.org/x/net/proxy"
 )
 
+//go:generate go run tagBuild.go
+
 var device = flag.String("device", "", "a device to execute commands on")
 var deviceFile = flag.String("devicefile", "", "file with a list of device to execute commands on. One device per line")
 var deviceStdIn = flag.Bool("devicestdin", false, "read list of devices from stdin (don't forget to CTRL-D, or provide EOF)")
@@ -30,6 +33,8 @@ var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative i
 var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
 var showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
 var logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
+
+var version = flag.Bool("version", false, "print version and exit")
 
 var username = flag.String("username", "", "username to use for login")
 
@@ -138,6 +143,10 @@ func main() {
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
 
+  if *version {
+    fmt.Printf("cpush git revision %s compiled at %s with Go %s\n", buildGitRevision, buildTime, runtime.Version())
+  }
+
 	if flag.NArg()+flag.NFlag() == 0 {
 		fmt.Printf(`cpush tool to send commands to Cisco and Juniper routers
 	
@@ -192,6 +201,14 @@ Other flags are:`)
 
 	if *device != "" {
 		output, err := cisco.Cmd(opts, *device, *username, password, *command)
+    if *logOutputTemplate != "" {
+      log.Printf("logging output to %q", *logOutputTemplate)
+      fn := strings.ReplaceAll(*logOutputTemplate, "%s", *device)
+      err := utils.AppendToFile(fn, output)
+      if err != nil {
+        log.Printf("failed to save output for router %q: %v", *device, err)
+      }
+    }
 		if err != nil {
 			log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
 		}
