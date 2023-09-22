@@ -187,7 +187,15 @@ Other flags are:`)
 	} else if *deviceList != "" {
 		devices := strings.Split(*deviceList, ",")
 
-		CmdDevices(opts, devices, *username, password, *command)
+		filteredDevices := []string{}
+		for _, device := range devices {
+			device = strings.TrimSpace(device)
+			if len(device) > 0 {
+				filteredDevices = append(filteredDevices, device)
+			}
+		}
+
+		CmdDevices(opts, filteredDevices, *username, password, *command)
 	} else if *deviceFile != "" {
 		fileLines, err := os.ReadFile(*deviceFile)
 		if err != nil {
@@ -195,7 +203,15 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(opts, devices, *username, password, *command)
+		filteredDevices := []string{}
+		for _, device := range devices {
+			device = strings.TrimSpace(device)
+			if len(device) > 0 {
+				filteredDevices = append(filteredDevices, device)
+			}
+		}
+
+		CmdDevices(opts, filteredDevices, *username, password, *command)
 	} else if *deviceStdIn {
 		fileLines, err := io.ReadAll(os.Stdin)
 		if err != nil {
