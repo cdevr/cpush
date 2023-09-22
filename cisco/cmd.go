@@ -126,19 +126,27 @@ func Push(opts *Options, device string, username string, password string, config
 	if _, err := stdinBuf.Write([]byte(configTemplateClose + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", configTemplateClose, device, err)
   }
-  time.Sleep(200 * time.Millisecond)
-	if _, err := stdinBuf.Write([]byte(quitTclSh + "\r\n")); err != nil {
+  time.Sleep(100 * time.Millisecond)
+	if _, err := stdinBuf.Write([]byte(quitTclSh + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", quitTclSh, device, err)
   }
-  time.Sleep(200 * time.Millisecond)
-	if _, err := stdinBuf.Write([]byte(commitConfig + "\r\n")); err != nil {
+  time.Sleep(100 * time.Millisecond)
+	if _, err := stdinBuf.Write([]byte(commitConfig + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", commitConfig, device, err)
   }
-	if _, err := stdinBuf.Write([]byte(confirm + "\r\n")); err != nil {
-		return "", fmt.Errorf("failed to run command %q on device %q: %v", confirm, device, err)
+  time.Sleep(100 * time.Millisecond)
+  utils.WaitFor(&output, "?", 5*time.Second)
+  if strings.Contains(output.LastLine(), "Destination filename") {
+    if _, err := stdinBuf.Write([]byte("\r")); err != nil {
+      return "", fmt.Errorf("failed to confirm write on device %q: %v", device, err)
+    }
+  } else {
+    if _, err := stdinBuf.Write([]byte(confirm + "\r")); err != nil {
+      return "", fmt.Errorf("failed to run command %q on device %q: %v", confirm, device, err)
+    }
   }
   time.Sleep(200 * time.Millisecond)
-	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
+	if _, err := stdinBuf.Write([]byte(exitCommand + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", exitCommand, device, err)
   }
   time.Sleep(200 * time.Millisecond)
@@ -211,7 +219,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	if !opts.suppressSending {
 		fmt.Fprintf(&result, "sending %q", noMore)
 	}
-	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
+	if _, err := stdinBuf.Write([]byte(noMore + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
 	}
 	if opts.suppressAdmin {
@@ -222,8 +230,8 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	if !opts.suppressSending {
 		fmt.Fprintf(&result, "sending %q", cmd)
 	}
-	if !strings.HasSuffix(cmd, "\r\n") {
-		cmd = cmd + "\r\n"
+	if !strings.HasSuffix(cmd, "\r") {
+		cmd = cmd + "\r"
 	}
 	if _, err := stdinBuf.Write([]byte(cmd)); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", cmd, device, err)

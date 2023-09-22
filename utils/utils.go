@@ -87,6 +87,29 @@ func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
 	}
 }
 
+func WaitFor(output *ThreadSafeBuffer, needle string, timeLimit time.Duration) {
+	detectPrompt := make(chan bool)
+	go func() {
+		start := time.Now()
+		for {
+			if strings.Contains(output.String(), needle) {
+				close(detectPrompt)
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+
+			// Make sure to stop after 2 seconds.
+			if time.Since(start) > timeLimit {
+				break
+			}
+		}
+	}()
+	select {
+	case <-time.After(timeLimit):
+	case <-detectPrompt:
+	}
+}
+
 func Dos2Unix(s string) string {
   return strings.ReplaceAll(s, "\r", "\n")
 }
