@@ -122,6 +122,18 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 	}
 }
 
+// filterEmptyDevices trims spaces and removes empty string from a list of strings.
+func filterEmptyDevices(devices []string) []string {
+	filteredDevices := []string{}
+	for _, device := range devices {
+		device = strings.TrimSpace(device)
+		if len(device) > 0 {
+			filteredDevices = append(filteredDevices, device)
+		}
+	}
+	return filteredDevices
+}
+
 func main() {
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
@@ -187,15 +199,7 @@ Other flags are:`)
 	} else if *deviceList != "" {
 		devices := strings.Split(*deviceList, ",")
 
-		filteredDevices := []string{}
-		for _, device := range devices {
-			device = strings.TrimSpace(device)
-			if len(device) > 0 {
-				filteredDevices = append(filteredDevices, device)
-			}
-		}
-
-		CmdDevices(opts, filteredDevices, *username, password, *command)
+		CmdDevices(opts, filterEmptyDevices(devices), *username, password, *command)
 	} else if *deviceFile != "" {
 		fileLines, err := os.ReadFile(*deviceFile)
 		if err != nil {
@@ -203,15 +207,7 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		filteredDevices := []string{}
-		for _, device := range devices {
-			device = strings.TrimSpace(device)
-			if len(device) > 0 {
-				filteredDevices = append(filteredDevices, device)
-			}
-		}
-
-		CmdDevices(opts, filteredDevices, *username, password, *command)
+		CmdDevices(opts, filterEmptyDevices(devices), *username, password, *command)
 	} else if *deviceStdIn {
 		fileLines, err := io.ReadAll(os.Stdin)
 		if err != nil {
