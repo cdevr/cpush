@@ -27,6 +27,7 @@ var deviceFile = flag.String("devicefile", "", "file with a list of device to ex
 var deviceStdIn = flag.Bool("devicestdin", false, "read list of devices from stdin (don't forget to CTRL-D, or provide EOF)")
 var deviceList = flag.String("devices", "", "comma-separated list of routers")
 var command = flag.String("cmd", "", "a command to execute")
+var push = flag.String("push", "", "something put into the configuration")
 
 var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner and login")
 var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
@@ -145,6 +146,7 @@ func main() {
 
   if *version {
     fmt.Printf("cpush git revision %s compiled at %s with Go %s\n", buildGitRevision, buildTime, runtime.Version())
+    return
   }
 
 	if flag.NArg()+flag.NFlag() == 0 {
@@ -171,8 +173,8 @@ Other flags are:`)
 	if *device == "" && *deviceList == "" && *deviceFile == "" {
 		*deviceStdIn = true
 	}
-	if *command == "" {
-		log.Printf("you didn't pass in a device")
+	if *command == "" && *push == "" {
+		log.Printf("you didn't pass in a command or a confliglet")
 		return
 	}
 	if *username == "" {
@@ -200,18 +202,26 @@ Other flags are:`)
 	}
 
 	if *device != "" {
-		output, err := cisco.Cmd(opts, *device, *username, password, *command)
+    var output string
+    if *command != "" {
+      output, err = cisco.Cmd(opts, *device, *username, password, *command)
+      if err != nil {
+        log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
+      }
+    }
+    if *push != "" {
+      output, err = cisco.Push(opts, *device, *username, password, *push)
+      if err != nil {
+        log.Fatalf("failed to commit configlet %q on device %q: %v", *command, *device, err)
+      }
+    }
     if *logOutputTemplate != "" {
-      log.Printf("logging output to %q", *logOutputTemplate)
       fn := strings.ReplaceAll(*logOutputTemplate, "%s", *device)
       err := utils.AppendToFile(fn, output)
       if err != nil {
         log.Printf("failed to save output for router %q: %v", *device, err)
       }
     }
-		if err != nil {
-			log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
-		}
 		fmt.Printf("%s\n", output)
 	} else if *deviceList != "" {
 		devices := strings.Split(*deviceList, ",")
