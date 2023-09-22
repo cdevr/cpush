@@ -95,10 +95,13 @@ func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
 
 func WaitFor(output *ThreadSafeBuffer, needle string, timeLimit time.Duration) {
 	detectPrompt := make(chan bool)
+  startIndex := len(output.String())
 	go func() {
 		start := time.Now()
 		for {
-			if strings.Contains(output.String(), needle) {
+			ostr := output.String()
+      ostr = ostr[startIndex:]
+			if strings.Contains(ostr, needle) {
 				close(detectPrompt)
 				break
 			}

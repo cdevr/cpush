@@ -20,8 +20,12 @@ const quitTclSh = "exit"
 const commitConfig = "copy flash:configlet running-config"
 const confirm = "y"
 
+func isRN(r rune) bool {
+  return r == '\r' || r == '\n'
+}
+
 func RemovePromptSuffix(str string) string {
-	lines := strings.Split(str, "\n")
+	lines := strings.FieldsFunc(str, isRN)
 	if len(lines) == 0 {
 		return str
 	}
@@ -29,6 +33,10 @@ func RemovePromptSuffix(str string) string {
 	last := len(lines)
 	trim := strings.Trim(lines[last-1], " ")
 	if strings.HasSuffix(trim, "#") || strings.HasSuffix(trim, ">") {
+		last -= 1
+	}
+	trim = strings.Trim(lines[last-1], " ")
+	if strings.HasSuffix(trim, "#"+exitCommand) || strings.HasSuffix(trim, ">"+exitCommand) {
 		last -= 1
 	}
 	return strings.Join(lines[:last], "\n")
@@ -236,17 +244,11 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	if _, err := stdinBuf.Write([]byte(cmd)); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", cmd, device, err)
 	}
-	time.Sleep(200 * time.Millisecond)
 	if opts.suppressSending {
 		utils.WaitForEnter(&output, 2*time.Second)
 		output.DiscardUntil('\r')
 	}
-
-	toPrint := ""
-	if opts.suppressAdmin {
-		utils.WaitForPrompt(&output, 20*time.Second)
-		toPrint = output.String()
-	}
+	time.Sleep(200 * time.Millisecond)
 
 	if !opts.suppressSending {
 		fmt.Fprintf(&result, "sending %q", exitCommand)
@@ -258,11 +260,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	done := make(chan struct{})
 	go func() {
 		session.Wait()
-		if toPrint != "" {
-			fmt.Fprintf(&result, "%s", toPrint)
-		} else {
-			fmt.Fprintf(&result, "%s", output.String())
-		}
+    fmt.Fprintf(&result, "%s", output.String())
 
 		close(done)
 	}()
