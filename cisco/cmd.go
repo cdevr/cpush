@@ -224,7 +224,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	}
 	if opts.suppressAdmin {
 		utils.WaitForPrompt(&output, 2*time.Second)
-		output.Reset()
+		output.DiscardUntil('\r')
 	}
 
 	if !opts.suppressSending {
@@ -239,7 +239,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	time.Sleep(200 * time.Millisecond)
 	if opts.suppressSending {
 		utils.WaitForEnter(&output, 2*time.Second)
-		output.Reset()
+		output.DiscardUntil('\r')
 	}
 
 	toPrint := ""

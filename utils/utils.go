@@ -13,6 +13,10 @@ func ReplaceFile(filename, text string) error {
 		return err
 	}
 	defer file.Close()
+  err = file.Truncate(0)
+	if err != nil {
+		return err
+	}
 
 	// Write the string to the file
 	_, err = file.WriteString(text)
@@ -111,5 +115,8 @@ func WaitFor(output *ThreadSafeBuffer, needle string, timeLimit time.Duration) {
 }
 
 func Dos2Unix(s string) string {
-  return strings.ReplaceAll(s, "\r", "\n")
+  var result = strings.ReplaceAll(s, "\r\n", "\n")
+  result = strings.ReplaceAll(result, "\r", "\n")
+
+  return result
 }

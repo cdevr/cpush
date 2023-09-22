@@ -69,13 +69,20 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 	var wg sync.WaitGroup
 
 	errors := make(chan error)
+  started := make(chan bool)
+  ended := make(chan bool)
 	outputs := make(chan routerOutput)
 	done := make(chan bool)
+
+  startCount := 0
+  endedCount := 0
 
 	for _, d := range devices {
 		wg.Add(1)
 		go func(device string) {
 			defer wg.Done()
+      started <- true
+      defer func() { ended <- true }()
 
 			var output string
 			var err error
@@ -92,6 +99,7 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 			case <-done:
 				outputs <- routerOutput{device, output}
 			case <-time.After(*timeout):
+				fmt.Printf("router %q hit timeout after %v\n", device, *timeout)
 				errors <- fmt.Errorf("router %q hit timeout after %v", device, *timeout)
 			}
 		}(d)
@@ -105,19 +113,26 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 	allDone := false
 	for !allDone {
 		select {
+    case <-started:
+      startCount += 1
+      fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
+    case <-ended:
+      startCount -= 1
+      endedCount += 1
+      fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
 		case err := <-errors:
-			fmt.Printf("error: %v\n", err)
+			fmt.Printf("\rerror: %v\n", err)
 		case output := <-outputs:
+      if *logOutputTemplate != "" {
+        fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
+        err := utils.ReplaceFile(fn, utils.Dos2Unix(output.output))
+        if err != nil {
+          log.Printf("failed to save output for router %q: %v", output.router, err)
+        }
+      }
+
 			lines := strings.Split(output.output, "\n")
 			for _, line := range lines {
-				if *logOutputTemplate != "" {
-					fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
-					err := utils.AppendToFile(fn, utils.Dos2Unix(line))
-					if err != nil {
-						log.Printf("failed to save output for router %q: %v", output.router, err)
-					}
-				}
-
         if !*suppressOutput {
           if *showDeviceName {
             fmt.Printf("%s: %s\n", output.router, line)
@@ -128,6 +143,8 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 			}
 		case <-done:
 			allDone = true
+      fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
+      fmt.Printf("\n")
 		}
 	}
 }
