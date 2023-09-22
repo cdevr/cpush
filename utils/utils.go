@@ -48,8 +48,10 @@ func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
 	detectPrompt := make(chan bool)
 	go func() {
 		start := time.Now()
+    startIndex := len(output.String())
 		for {
 			ostr := output.String()
+      ostr = ostr[startIndex:]
 			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") || strings.Contains(ostr, "$") {
 				close(detectPrompt)
 				break

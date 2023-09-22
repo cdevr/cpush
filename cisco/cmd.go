@@ -244,7 +244,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 
 	toPrint := ""
 	if opts.suppressAdmin {
-		utils.WaitForPrompt(&output, 2*time.Second)
+		utils.WaitForPrompt(&output, 20*time.Second)
 		toPrint = output.String()
 	}
 

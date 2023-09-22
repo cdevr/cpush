@@ -40,6 +40,7 @@ var version = flag.Bool("version", false, "print version and exit")
 
 var username = flag.String("username", "", "username to use for login")
 
+var retries = flag.Int("retries", 3, "retries (per device)")
 var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command")
 
 var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
@@ -64,45 +65,54 @@ type routerOutput struct {
 	output string
 }
 
+type routerError struct {
+	router string
+	err error
+}
+
 // CmdDevices executes a command on many devices, prints the output.
 func CmdDevices(opts *cisco.Options, devices []string, username string, password string, cmd string) {
 	var wg sync.WaitGroup
 
-	errors := make(chan error)
+	outputs := make(chan routerOutput)
+	errors := make(chan routerError)
+
+	done := make(chan bool)
+
   started := make(chan bool)
   ended := make(chan bool)
-	outputs := make(chan routerOutput)
-	done := make(chan bool)
 
   startCount := 0
   endedCount := 0
 
+  doDevice := func(device string) {
+    defer wg.Done()
+    started <- true
+    defer func() { ended <- true }()
+
+    var output string
+    var err error
+    done := make(chan bool)
+    go func() {
+      output, err = cisco.Cmd(opts, device, username, password, cmd)
+      done <- true
+    }()
+
+    select {
+    case <-done:
+      if err != nil {
+        errors <- routerError{device, err}
+      } else {
+        outputs <- routerOutput{device, output}
+      }
+    case <-time.After(*timeout):
+      errors <- routerError{device, fmt.Errorf("router %q hit timeout after %v", device, *timeout)}
+    }
+  }
+
 	for _, d := range devices {
 		wg.Add(1)
-		go func(device string) {
-			defer wg.Done()
-      started <- true
-      defer func() { ended <- true }()
-
-			var output string
-			var err error
-			done := make(chan bool)
-			go func() {
-				output, err = cisco.Cmd(opts, device, username, password, cmd)
-				if err != nil {
-					errors <- fmt.Errorf("failed to execute command %q on device %q: %v", cmd, device, err)
-				}
-				done <- true
-			}()
-
-			select {
-			case <-done:
-				outputs <- routerOutput{device, output}
-			case <-time.After(*timeout):
-				fmt.Printf("router %q hit timeout after %v\n", device, *timeout)
-				errors <- fmt.Errorf("router %q hit timeout after %v", device, *timeout)
-			}
-		}(d)
+    go doDevice(d)
 	}
 
 	go func() {
@@ -120,8 +130,8 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
       startCount -= 1
       endedCount += 1
       fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
-		case err := <-errors:
-			fmt.Printf("\rerror: %v\n", err)
+		case re := <-errors:
+			fmt.Printf("\rerror on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
       if *logOutputTemplate != "" {
         fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
