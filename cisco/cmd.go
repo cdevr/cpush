@@ -21,7 +21,7 @@ const commitConfig = "copy flash:configlet running-config"
 const confirm = "y"
 
 func isRN(r rune) bool {
-  return r == '\r' || r == '\n'
+	return r == '\r' || r == '\n'
 }
 
 func RemovePromptSuffix(str string) string {
@@ -54,19 +54,19 @@ func respondInteractive(password string) func(user, instruction string, question
 
 // Push pushes a configlet to an ios device.
 func Push(opts *Options, device string, username string, password string, configlet string) (string, error) {
-  config := &ssh.ClientConfig{
-    User: username,
-    Auth: []ssh.AuthMethod{
-      ssh.Password(password),
-      ssh.KeyboardInteractive(respondInteractive(password)),
-     },
-     HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-  }
+	config := &ssh.ClientConfig{
+		User: username,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(password),
+			ssh.KeyboardInteractive(respondInteractive(password)),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
 
-  addr := device
-  if !strings.Contains(addr, ":") {
-    addr = addr + ":22"
-  }
+	addr := device
+	if !strings.Contains(addr, ":") {
+		addr = addr + ":22"
+	}
 
 	tcpconn, err := opts.dialer("tcp", addr)
 	if err != nil {
@@ -105,63 +105,63 @@ func Push(opts *Options, device string, username string, password string, config
 	var output utils.ThreadSafeBuffer
 	session.Stdout = &output
 
-	utils.WaitForPrompt(&output, 2*time.Second)
-	if opts.suppressBanner {
-		output.Reset()
-	}
+	utils.WaitForPrompt(&output, 2*time.Second, opts.suppressBanner)
 
 	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
-  }
-	utils.WaitForPrompt(&output, 2*time.Second)
+	}
+	utils.WaitForPrompt(&output, 2*time.Second, false)
+	if opts.suppressSending {
+		output.DiscardUntil('\r')
+	}
 
 	if _, err := stdinBuf.Write([]byte(startTclSh + "\r\n")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", startTclSh, device, err)
-  }
-  time.Sleep(200 * time.Millisecond)
+	}
+	time.Sleep(200 * time.Millisecond)
 	if _, err := stdinBuf.Write([]byte(configTemplateOpen + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", configTemplateOpen, device, err)
-  }
-  time.Sleep(200 * time.Millisecond)
-  // Expand ";" to \n to allow for multiline.
-  expandedConfiglet := strings.ReplaceAll(configlet, ";", "\n")
-  for _, s := range strings.Split(expandedConfiglet, "\n") {
-    if _, err := stdinBuf.Write([]byte(s + "\r")); err != nil {
-      return "", fmt.Errorf("failed to enter configlet line %q on device %q: %v", s, device, err)
-    }
-    time.Sleep(20)
-  }
+	}
+	time.Sleep(200 * time.Millisecond)
+	// Expand ";" to \n to allow for multiline.
+	expandedConfiglet := strings.ReplaceAll(configlet, ";", "\n")
+	for _, s := range strings.Split(expandedConfiglet, "\n") {
+		if _, err := stdinBuf.Write([]byte(s + "\r")); err != nil {
+			return "", fmt.Errorf("failed to enter configlet line %q on device %q: %v", s, device, err)
+		}
+		time.Sleep(20)
+	}
 	if _, err := stdinBuf.Write([]byte(configTemplateClose + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", configTemplateClose, device, err)
-  }
-  time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
 	if _, err := stdinBuf.Write([]byte(quitTclSh + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", quitTclSh, device, err)
-  }
-  time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
 	if _, err := stdinBuf.Write([]byte(commitConfig + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", commitConfig, device, err)
-  }
-  time.Sleep(100 * time.Millisecond)
-  utils.WaitFor(&output, "?", 5*time.Second)
-  if strings.Contains(output.LastLine(), "Destination filename") {
-    if _, err := stdinBuf.Write([]byte("\r")); err != nil {
-      return "", fmt.Errorf("failed to confirm write on device %q: %v", device, err)
-    }
-  } else {
-    if _, err := stdinBuf.Write([]byte(confirm + "\r")); err != nil {
-      return "", fmt.Errorf("failed to run command %q on device %q: %v", confirm, device, err)
-    }
-  }
-  time.Sleep(200 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
+	utils.WaitFor(&output, "?", 5*time.Second)
+	if strings.Contains(output.LastLine(), "Destination filename") {
+		if _, err := stdinBuf.Write([]byte("\r")); err != nil {
+			return "", fmt.Errorf("failed to confirm write on device %q: %v", device, err)
+		}
+	} else {
+		if _, err := stdinBuf.Write([]byte(confirm + "\r")); err != nil {
+			return "", fmt.Errorf("failed to run command %q on device %q: %v", confirm, device, err)
+		}
+	}
+	time.Sleep(200 * time.Millisecond)
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", exitCommand, device, err)
-  }
-  time.Sleep(200 * time.Millisecond)
+	}
+	time.Sleep(200 * time.Millisecond)
 
-	utils.WaitForPrompt(&output, 2*time.Second)
+	utils.WaitForPrompt(&output, 2*time.Second, false)
 
-  return output.String(), nil
+	return output.String(), nil
 }
 
 // Cmd executes a command on a device and returns the output.
@@ -219,10 +219,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	var output utils.ThreadSafeBuffer
 	session.Stdout = &output
 
-	utils.WaitForPrompt(&output, 2*time.Second)
-	if opts.suppressBanner {
-		output.Reset()
-	}
+	utils.WaitForPrompt(&output, 2*time.Second, opts.suppressBanner)
 
 	if !opts.suppressSending {
 		fmt.Fprintf(&result, "sending %q", noMore)
@@ -231,7 +228,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
 	}
 	if opts.suppressAdmin {
-		utils.WaitForPrompt(&output, 2*time.Second)
+		utils.WaitForPrompt(&output, 2*time.Second, false)
 		output.DiscardUntil('\r')
 	}
 
@@ -260,7 +257,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	done := make(chan struct{})
 	go func() {
 		session.Wait()
-    fmt.Fprintf(&result, "%s", output.String())
+		fmt.Fprintf(&result, "%s", output.String())
 
 		close(done)
 	}()

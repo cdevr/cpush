@@ -13,7 +13,7 @@ func ReplaceFile(filename, text string) error {
 		return err
 	}
 	defer file.Close()
-  err = file.Truncate(0)
+	err = file.Truncate(0)
 	if err != nil {
 		return err
 	}
@@ -44,17 +44,22 @@ func AppendToFile(filename, text string) error {
 	return nil
 }
 
-func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration) {
+func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration, erase bool) {
 	detectPrompt := make(chan bool)
 	go func() {
 		start := time.Now()
-    startIndex := len(output.String())
+		startIndex := len(output.String())
 		for {
 			ostr := output.String()
-      ostr = ostr[startIndex:]
-			if strings.Contains(ostr, "#") || strings.Contains(ostr, ">") || strings.Contains(ostr, "$") {
-				close(detectPrompt)
-				break
+			ostr = ostr[startIndex:]
+			for _, c := range []string{"#", ">", "$"} {
+				if strings.Contains(ostr, c) {
+					if erase {
+						output.DiscardUntil(byte(c[0]))
+					}
+					close(detectPrompt)
+					break
+				}
 			}
 			time.Sleep(20 * time.Millisecond)
 
@@ -95,12 +100,12 @@ func WaitForEnter(output *ThreadSafeBuffer, timeLimit time.Duration) {
 
 func WaitFor(output *ThreadSafeBuffer, needle string, timeLimit time.Duration) {
 	detectPrompt := make(chan bool)
-  startIndex := len(output.String())
+	startIndex := len(output.String())
 	go func() {
 		start := time.Now()
 		for {
 			ostr := output.String()
-      ostr = ostr[startIndex:]
+			ostr = ostr[startIndex:]
 			if strings.Contains(ostr, needle) {
 				close(detectPrompt)
 				break
@@ -120,8 +125,8 @@ func WaitFor(output *ThreadSafeBuffer, needle string, timeLimit time.Duration) {
 }
 
 func Dos2Unix(s string) string {
-  var result = strings.ReplaceAll(s, "\r\n", "\n")
-  result = strings.ReplaceAll(result, "\r", "\n")
+	var result = strings.ReplaceAll(s, "\r\n", "\n")
+	result = strings.ReplaceAll(result, "\r", "\n")
 
-  return result
+	return result
 }

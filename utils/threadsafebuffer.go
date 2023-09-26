@@ -3,19 +3,19 @@ package utils
 import (
 	"bytes"
 	"io"
+	"strings"
 	"sync"
-  "strings"
 )
 
 type ThreadSafeBuffer struct {
-	b bytes.Buffer
+	bytes.Buffer
 	m sync.Mutex
 }
 
 func (b *ThreadSafeBuffer) Read(p []byte) (n int, err error) {
 	b.m.Lock()
 	defer b.m.Unlock()
-	return b.b.Read(p)
+	return b.Read(p)
 }
 
 func (b *ThreadSafeBuffer) DiscardUntil(p byte) error {
@@ -23,7 +23,7 @@ func (b *ThreadSafeBuffer) DiscardUntil(p byte) error {
 	defer b.m.Unlock()
 
 	for {
-		b, err := b.b.ReadByte()
+		b, err := b.ReadByte()
 		if err == io.EOF {
 			return nil
 		}
@@ -37,33 +37,33 @@ func (b *ThreadSafeBuffer) DiscardUntil(p byte) error {
 }
 
 func (b *ThreadSafeBuffer) LastLine() string {
-  lines := strings.Split(b.b.String(), "\n")
-  if len(lines) > 0 {
-    return lines[len(lines)-1]
-  }
-  return ""
+	lines := strings.Split(b.String(), "\n")
+	if len(lines) > 0 {
+		return lines[len(lines)-1]
+	}
+	return ""
 }
 
 func (b *ThreadSafeBuffer) Write(p []byte) (n int, err error) {
 	b.m.Lock()
 	defer b.m.Unlock()
-	return b.b.Write(p)
+	return b.Write(p)
 }
 
 func (b *ThreadSafeBuffer) Len() int {
 	b.m.Lock()
 	defer b.m.Unlock()
-	return b.b.Len()
+	return b.Len()
 }
 
 func (b *ThreadSafeBuffer) Reset() {
 	b.m.Lock()
 	defer b.m.Unlock()
-	b.b.Reset()
+	b.Reset()
 }
 
 func (b *ThreadSafeBuffer) String() string {
 	b.m.Lock()
 	defer b.m.Unlock()
-	return b.b.String()
+	return b.String()
 }
