@@ -199,16 +199,14 @@ Other flags are:`)
 		return
 	}
 	// Allow device and command arguments to be passed in as non-args.
-	if *device == "" && flag.NArg() == 1 {
+	if *device == "" && *deviceList == "" && *deviceFile == "" && flag.NArg() == 1 && *command == "" && *push == "" {
 		*device = flag.Arg(0)
+		*interactive = true
 	} else if *device == "" && *command == "" && flag.NArg() >= 2 {
 		*device = flag.Arg(0)
 		*command = strings.Join(flag.Args()[1:], " ")
 	}
 
-	if *device == "" && *deviceList == "" && *deviceFile == "" {
-		*deviceStdIn = true
-	}
 	if *command == "" && *push == "" && *interactive == false {
 		log.Printf("you didn't pass in a command or a confliglet")
 		return
@@ -239,8 +237,10 @@ Other flags are:`)
 
 	if *device != "" {
 		if *interactive {
-			log.Printf("starting interactive shell")
-			shell.Interactive(opts, *device, *username, password)
+			err = shell.Interactive(opts, *device, *username, password)
+			if err != nil {
+				log.Fatalf("failed to start interactive shell: %v", err)
+			}
 			return
 		}
 		var output string
