@@ -58,7 +58,7 @@ func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration, erase bool
 						output.DiscardUntil(byte(c[0]))
 					}
 					close(detectPrompt)
-					break
+					return
 				}
 			}
 			time.Sleep(20 * time.Millisecond)
