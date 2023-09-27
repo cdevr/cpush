@@ -51,3 +51,7 @@ func (o *Options) Dialer(d Dialer) *Options {
 	o.dialer = d
 	return o
 }
+
+func (o *Options) Dial(network string, addr string) (net.Conn, error) {
+	return o.dialer(network, addr)
+}
