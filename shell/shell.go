@@ -8,6 +8,7 @@ import (
 
 	"github.com/cdevr/cpush/cisco"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/term"
 )
 
 func respondInteractive(password string) func(user, instruction string, questions []string, echos []bool) ([]string, error) {
@@ -61,6 +62,13 @@ func Interactive(opts *cisco.Options, device string, username string, password s
 	if err := session.RequestPty("xterm", 50, 80, modes); err != nil {
 		return fmt.Errorf("failed to get pty on device %q: %v", device, err)
 	}
+
+	// Set terminal to raw mode so single keys work.
+	oldTerminalState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return fmt.Errorf("failed to set Terminal to raw mode: %v", err)
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldTerminalState)
 
 	session.Stdin = os.Stdin
 	session.Stderr = os.Stderr
