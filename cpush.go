@@ -45,6 +45,7 @@ var username = flag.String("username", "", "username to use for login")
 
 var retries = flag.Int("retries", 3, "retries (per device)")
 var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command")
+var concurrentLimit = flag.Int("limit", 10, "maximum number of simultaneous devices")
 
 var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
@@ -74,8 +75,10 @@ type routerError struct {
 }
 
 // CmdDevices executes a command on many devices, prints the output.
-func CmdDevices(opts *cisco.Options, devices []string, username string, password string, cmd string) {
+func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, username string, password string, cmd string) {
 	var wg sync.WaitGroup
+
+	deviceChan := make(chan string)
 
 	outputs := make(chan routerOutput)
 	errors := make(chan routerError)
@@ -89,7 +92,6 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 	endedCount := 0
 
 	doDevice := func(device string) {
-		defer wg.Done()
 		started <- true
 		defer func() { ended <- true }()
 
@@ -113,10 +115,24 @@ func CmdDevices(opts *cisco.Options, devices []string, username string, password
 		}
 	}
 
-	for _, d := range devices {
-		wg.Add(1)
-		go doDevice(d)
+	worker := func() {
+		defer wg.Done()
+		for device := range deviceChan {
+			doDevice(device)
+		}
 	}
+
+	for i := 0; i < concurrentLimit; i++ {
+		wg.Add(1)
+		go worker()
+	}
+
+	go func() {
+		for _, d := range devices {
+			deviceChan <- d
+		}
+		close(deviceChan)
+	}()
 
 	go func() {
 		wg.Wait()
@@ -269,7 +285,7 @@ Other flags are:`)
 	} else if *deviceList != "" {
 		devices := strings.Split(*deviceList, ",")
 
-		CmdDevices(opts, filterEmptyDevices(devices), *username, password, *command)
+		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
 	} else if *deviceFile != "" {
 		fileLines, err := os.ReadFile(*deviceFile)
 		if err != nil {
@@ -277,7 +293,7 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(opts, filterEmptyDevices(devices), *username, password, *command)
+		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
 	} else if *deviceStdIn {
 		fileLines, err := io.ReadAll(os.Stdin)
 		if err != nil {
@@ -285,7 +301,7 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(opts, devices, *username, password, *command)
+		CmdDevices(opts, *concurrentLimit, devices, *username, password, *command)
 	}
 	os.Exit(0)
 }
