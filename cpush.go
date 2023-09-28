@@ -45,7 +45,7 @@ var username = flag.String("username", "", "username to use for login")
 
 var retries = flag.Int("retries", 3, "retries (per device)")
 var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command")
-var concurrentLimit = flag.Int("limit", 10, "maximum number of simultaneous devices")
+var concurrentLimit = flag.Int("limit", 25, "maximum number of simultaneous devices")
 
 var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
@@ -141,14 +141,15 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 
 	allDone := false
 	for !allDone {
+		remaining := len(devices) - startCount - endedCount
 		select {
 		case <-started:
 			startCount += 1
-			fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
+			fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
-			fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
+			fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 		case re := <-errors:
 			fmt.Printf("\rerror on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
@@ -172,7 +173,7 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 			}
 		case <-done:
 			allDone = true
-			fmt.Printf("\033[2K\r%d/%d/%d", startCount, endedCount, len(devices))
+			fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 			fmt.Printf("\n")
 		}
 	}
