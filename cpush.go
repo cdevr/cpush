@@ -36,6 +36,7 @@ var suppressBanner = flag.Bool("suppress_banner", true, "suppress the SSH banner
 var suppressAdmin = flag.Bool("suppress_admin", true, "suppress administrative information")
 var suppressSending = flag.Bool("suppress_sending", true, "suppress what is being sent to the router")
 var suppressOutput = flag.Bool("suppress_output", false, "don't print router output")
+var suppressProgress = flag.Bool("suppress_progress", false, "don't show progress indicator")
 var showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
 var logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
 
@@ -91,7 +92,7 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 	startCount := 0
 	endedCount := 0
 
-	doDevice := func(device string) {
+	doDevice := func(device string) (string, error) {
 		started <- true
 		defer func() { ended <- true }()
 
@@ -105,20 +106,26 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 
 		select {
 		case <-done:
-			if err != nil {
-				errors <- routerError{device, err}
-			} else {
-				outputs <- routerOutput{device, output}
-			}
+			return output, err
 		case <-time.After(*timeout):
-			errors <- routerError{device, fmt.Errorf("router %q hit timeout after %v", device, *timeout)}
+			return "", fmt.Errorf("router %q hit timeout after %v", device, *timeout)
 		}
 	}
 
 	worker := func() {
 		defer wg.Done()
+	devices:
 		for device := range deviceChan {
-			doDevice(device)
+			for itry := 0; itry < *retries; itry += 1 {
+				output, err := doDevice(device)
+				if err != nil {
+					errors <- routerError{device, err}
+				} else {
+					outputs <- routerOutput{device, output}
+					continue devices
+				}
+				log.Printf("Retrying %q: %d/%d", device, itry, *retries)
+			}
 		}
 	}
 
@@ -145,11 +152,15 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 		select {
 		case <-started:
 			startCount += 1
-			fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+			if !*suppressProgress {
+				fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+			}
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
-			fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+			if !*suppressProgress {
+				fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+			}
 		case re := <-errors:
 			fmt.Printf("\rerror on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
@@ -173,8 +184,10 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 			}
 		case <-done:
 			allDone = true
-			fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
-			fmt.Printf("\n")
+			if !*suppressProgress {
+				fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Printf("\n")
+			}
 		}
 	}
 }
