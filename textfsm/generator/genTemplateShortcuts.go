@@ -1,3 +1,4 @@
+// genTemplateShortcuts generates shortcut functions for all the templates included.
 package main
 
 import (
