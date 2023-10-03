@@ -12,6 +12,24 @@ import (
 	"unicode"
 )
 
+//go:generate go run generator/genTemplateShortcuts.go -out shortcuts.go
+
+func Parse(template, input string, eof bool) ([]map[string]interface{}, error) {
+	fsm := TextFSM{}
+	err := fsm.ParseString(template)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	parserOutput := &ParserOutput{}
+	err = parserOutput.ParseTextString(input, fsm, eof)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process input: %v", err)
+	}
+
+	return parserOutput.Dict, nil
+}
+
 type State struct {
 	name  string
 	rules []Rule
