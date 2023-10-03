@@ -162,7 +162,7 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 			}
 		case re := <-errors:
-			fmt.Printf("\rerror on %q: %v\n", re.router, re.err)
+			fmt.Fprintf(os.Stderr, "\rerror on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
 			if *logOutputTemplate != "" {
 				fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
