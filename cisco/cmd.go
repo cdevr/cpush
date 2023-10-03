@@ -229,7 +229,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	}
 	if opts.suppressAdmin {
 		utils.WaitForPrompt(&output, 2*time.Second, false)
-		output.DiscardUntil('\r')
+		output.Reset()
 	}
 
 	if !opts.suppressSending {
