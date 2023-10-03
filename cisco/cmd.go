@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cdevr/cpush/options"
 	"github.com/cdevr/cpush/utils"
 	"golang.org/x/crypto/ssh"
 )
@@ -53,7 +54,7 @@ func respondInteractive(password string) func(user, instruction string, question
 }
 
 // Push pushes a configlet to an ios device.
-func Push(opts *Options, device string, username string, password string, configlet string) (string, error) {
+func Push(opts *options.Options, device string, username string, password string, configlet string) (string, error) {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -68,7 +69,7 @@ func Push(opts *Options, device string, username string, password string, config
 		addr = addr + ":22"
 	}
 
-	tcpconn, err := opts.dialer("tcp", addr)
+	tcpconn, err := opts.Dial("tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
@@ -105,13 +106,13 @@ func Push(opts *Options, device string, username string, password string, config
 	var output utils.ThreadSafeBuffer
 	session.Stdout = &output
 
-	utils.WaitForPrompt(&output, 2*time.Second, opts.suppressBanner)
+	utils.WaitForPrompt(&output, 2*time.Second, opts.SuppressBanner)
 
 	if _, err := stdinBuf.Write([]byte(noMore + "\r\n")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
 	}
 	utils.WaitForPrompt(&output, 2*time.Second, false)
-	if opts.suppressSending {
+	if opts.SuppressSending {
 		output.DiscardUntil('\r')
 	}
 
@@ -165,7 +166,7 @@ func Push(opts *Options, device string, username string, password string, config
 }
 
 // Cmd executes a command on a device and returns the output.
-func Cmd(opts *Options, device string, username string, password string, cmd string) (string, error) {
+func Cmd(opts *options.Options, device string, username string, password string, cmd string) (string, error) {
 	var result bytes.Buffer
 
 	config := &ssh.ClientConfig{
@@ -182,7 +183,7 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 		addr = addr + ":22"
 	}
 
-	tcpconn, err := opts.dialer("tcp", addr)
+	tcpconn, err := opts.Dial("tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
@@ -219,20 +220,20 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	var output utils.ThreadSafeBuffer
 	session.Stdout = &output
 
-	utils.WaitForPrompt(&output, 2*time.Second, opts.suppressBanner)
+	utils.WaitForPrompt(&output, 2*time.Second, opts.SuppressBanner)
 
-	if !opts.suppressSending {
+	if !opts.SuppressSending {
 		fmt.Fprintf(&result, "sending %q", noMore)
 	}
 	if _, err := stdinBuf.Write([]byte(noMore + "\r")); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", noMore, device, err)
 	}
-	if opts.suppressAdmin {
+	if opts.SuppressAdmin {
 		utils.WaitForPrompt(&output, 2*time.Second, false)
 		output.Reset()
 	}
 
-	if !opts.suppressSending {
+	if !opts.SuppressSending {
 		fmt.Fprintf(&result, "sending %q", cmd)
 	}
 	if !strings.HasSuffix(cmd, "\r") {
@@ -241,13 +242,13 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 	if _, err := stdinBuf.Write([]byte(cmd)); err != nil {
 		return "", fmt.Errorf("failed to run command %q on device %q: %v", cmd, device, err)
 	}
-	if opts.suppressSending {
+	if opts.SuppressSending {
 		utils.WaitForEnter(&output, 2*time.Second)
 		output.DiscardUntil('\r')
 	}
 	time.Sleep(200 * time.Millisecond)
 
-	if !opts.suppressSending {
+	if !opts.SuppressSending {
 		fmt.Fprintf(&result, "sending %q", exitCommand)
 	}
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r\n")); err != nil {
@@ -264,8 +265,8 @@ func Cmd(opts *Options, device string, username string, password string, cmd str
 
 	select {
 	case <-done:
-	case <-time.After(opts.timeout):
-		return "", fmt.Errorf("timeout of %v hit!", opts.timeout)
+	case <-time.After(opts.Timeout):
+		return "", fmt.Errorf("timeout of %v hit!", opts.Timeout)
 	}
 	return RemovePromptSuffix(result.String()), nil
 }

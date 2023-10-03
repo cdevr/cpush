@@ -2,11 +2,11 @@ package shell
 
 import (
 	"fmt"
+	"github.com/cdevr/cpush/options"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/cdevr/cpush/cisco"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
@@ -22,7 +22,7 @@ func respondInteractive(password string) func(user, instruction string, question
 }
 
 // Interactive starts a remote shell and connects it to the terminal.
-func Interactive(opts *cisco.Options, device string, username string, password string) error {
+func Interactive(opts *options.Options, device string, username string, password string) error {
 	log.Printf("starting interactive shell")
 	config := &ssh.ClientConfig{
 		User: username,
