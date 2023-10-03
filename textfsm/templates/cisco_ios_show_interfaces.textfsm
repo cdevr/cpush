@@ -1,0 +1,65 @@
+Value Required interface (\S+)
+Value link_status (.+?)
+Value protocol_status (.+?)
+Value hardware_type ([\w ]+)
+Value mac_address ([a-fA-F0-9]{4}\.[a-fA-F0-9]{4}\.[a-fA-F0-9]{4})
+Value bia_mac_address ([a-fA-F0-9]{4}\.[a-fA-F0-9]{4}\.[a-fA-F0-9]{4})
+Value description (.+?)
+Value ip (\d+\.\d+\.\d+\.\d+)
+Value prefixlen (\d+)
+Value mtu (\d+)
+Value duplex (([Ff]ull|[Aa]uto|[Hh]alf|[Aa]-).*?)
+Value speed (.*?)
+Value media_type (\S+.*)
+Value bandwidth (\d+\s+\w+)
+Value delay (\d+\s+\S+)
+Value encapsulation (.+?)
+Value last_input (.+?)
+Value last_output (.+?)
+Value last_output_hang (.+?)
+Value queue_strategy (.+)
+Value input_rate (\d+)
+Value output_rate (\d+)
+Value input_pps (\d+)
+Value output_pps (\d+)
+Value input_packets (\d+)
+Value output_packets (\d+)
+Value runts (\d+)
+Value giants (\d+)
+Value input_errors (\d+)
+Value crc (\d+)
+Value frame (\d+)
+Value overrun (\d+)
+Value abort (\d+)
+Value output_errors (\d+)
+Value vlan_id (\d+)
+Value vlan_id_inner (\d+)
+Value vlan_id_outer (\d+)
+
+Start
+  ^\S+\s+is\s+.+?,\s+line\s+protocol.*$$ -> Continue.Record
+  ^${interface}\s+is\s+${link_status},\s+line\s+protocol\s+is\s+${protocol_status}\s*$$
+  ^\s+Hardware\s+is\s+${hardware_type} -> Continue
+  ^.+address\s+is\s+${mac_address}\s+\(bia\s+${bia_mac_address}\)\s*$$
+  ^\s+Description:\s+${description}\s*$$
+  ^\s+Internet\s+address\s+is\s+${ip}\/${prefixlen}\s*$$
+  ^\s+MTU\s+${mtu}.*BW\s+${bandwidth}.*DLY\s+${delay},\s*$$
+  ^\s+Encapsulation\s+${encapsulation}, Vlan ID\s+${vlan_id}.+$$
+  ^\s+Encapsulation\s+${encapsulation}, outer ID\s+${vlan_id_outer}, inner ID\s+${vlan_id_inner}.+$$
+  ^\s+Encapsulation\s+${encapsulation},.+$$
+  ^\s+Last\s+input\s+${last_input},\s+output\s+${last_output},\s+output\s+hang\s+${last_output_hang}\s*$$
+  ^\s+Queueing\s+strategy:\s+${queue_strategy}\s*$$
+  ^\s+${duplex},\s+${speed},.+media\stype\sis\s${media_type}$$
+  ^\s+${duplex},\s+${speed},.+TX/FX$$
+  ^\s+${duplex},\s+${speed}$$
+  ^.*input\s+rate\s+${input_rate}\s+\w+/sec,\s+${input_pps}\s+packets.+$$
+  ^.*output\s+rate\s+${output_rate}\s+\w+/sec,\s+${output_pps}\s+packets.+$$
+  ^\s+${input_packets}\s+packets\s+input,\s+\d+\s+bytes,\s+\d+\s+no\s+buffer\s*$$
+  ^\s+${runts}\s+runts,\s+${giants}\s+giants,\s+\d+\s+throttles\s*$$
+  ^\s+${input_errors}\s+input\s+errors,\s+${crc}\s+crc,\s+${frame}\s+frame,\s+${overrun}\s+overrun,\s+\d+\s+ignored\s*$$
+  ^\s+${input_errors}\s+input\s+errors,\s+${crc}\s+crc,\s+${frame}\s+frame,\s+${overrun}\s+overrun,\s+\d+\s+ignored,\s+${abort}\s+abort\s*$$
+  ^\s+${output_packets}\s+packets\s+output,\s+\d+\s+bytes,\s+\d+\s+underruns\s*$$
+  ^\s+${output_errors}\s+output\s+errors,\s+\d+\s+collisions,\s+\d+\s+interface\s+resets\s*$$
+  # Capture time-stamp if vty line has command time-stamping turned on
+  ^Load\s+for\s+
+  ^Time\s+source\s+is

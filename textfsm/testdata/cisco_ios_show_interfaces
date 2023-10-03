@@ -1,0 +1,8 @@
+FastEthernet1/0 is up, line protocol is down
+  Hardware is AmdFE, address is 0001.961f.1b70 (bia 0001.961f.1b70)
+  Internet address is 192.168.1.9/28
+  MTU 1500 bytes, BW 100000 Kbit, DLY 100 usec,
+    reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation ARPA, loopback not set
+  Keepalive set (10 sec)
+  Full-duplex, 100Mb/s, 100BaseTX/FX
