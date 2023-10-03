@@ -45,7 +45,7 @@ func RemovePromptSuffix(str string) string {
 
 func respondInteractive(password string) func(user, instruction string, questions []string, echos []bool) ([]string, error) {
 	return func(user, instruction string, questions []string, echos []bool) ([]string, error) {
-		answers := []string{}
+		var answers []string
 		for range questions {
 			answers = append(answers, password)
 		}
@@ -69,15 +69,15 @@ func Push(opts *options.Options, device string, username string, password string
 		addr = addr + ":22"
 	}
 
-	tcpconn, err := opts.Dial("tcp", addr)
+	tcpConn, err := opts.Dial("tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
-	sshconn, chans, reqs, err := ssh.NewClientConn(tcpconn, addr, config)
+	sshConn, chans, reqs, err := ssh.NewClientConn(tcpConn, addr, config)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
-	conn := ssh.NewClient(sshconn, chans, reqs)
+	conn := ssh.NewClient(sshConn, chans, reqs)
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -183,15 +183,15 @@ func Cmd(opts *options.Options, device string, username string, password string,
 		addr = addr + ":22"
 	}
 
-	tcpconn, err := opts.Dial("tcp", addr)
+	tcpConn, err := opts.Dial("tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
-	sshconn, chans, reqs, err := ssh.NewClientConn(tcpconn, addr, config)
+	sshConn, chans, reqs, err := ssh.NewClientConn(tcpConn, addr, config)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
-	conn := ssh.NewClient(sshconn, chans, reqs)
+	conn := ssh.NewClient(sshConn, chans, reqs)
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -266,7 +266,7 @@ func Cmd(opts *options.Options, device string, username string, password string,
 	select {
 	case <-done:
 	case <-time.After(opts.Timeout):
-		return "", fmt.Errorf("timeout of %v hit!", opts.Timeout)
+		return "", fmt.Errorf("timeout of %v hit", opts.Timeout)
 	}
 	return RemovePromptSuffix(result.String()), nil
 }
