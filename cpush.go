@@ -124,7 +124,7 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
-				log.Printf("Retrying %q: %d/%d", device, itry, *retries)
+				fmt.Fprintf(os.Stderr, "Retrying %q: %d/%d", device, itry, *retries)
 			}
 		}
 	}
@@ -153,13 +153,13 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 		case <-started:
 			startCount += 1
 			if !*suppressProgress {
-				fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 			}
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
 			if !*suppressProgress {
-				fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 			}
 		case re := <-errors:
 			fmt.Printf("\rerror on %q: %v\n", re.router, re.err)
@@ -185,8 +185,8 @@ func CmdDevices(opts *cisco.Options, concurrentLimit int, devices []string, user
 		case <-done:
 			allDone = true
 			if !*suppressProgress {
-				fmt.Printf("\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
-				fmt.Printf("\n")
+				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprintf(os.Stderr, "\n")
 			}
 		}
 	}
