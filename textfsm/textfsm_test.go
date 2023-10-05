@@ -835,7 +835,6 @@ func TestExample(t *testing.T) {
 
 	if diff := deep.Equal(got, want); diff != nil {
 		t.Error(diff)
-		t.Logf("%#v", got)
 	}
 }
 

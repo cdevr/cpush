@@ -56,8 +56,8 @@ Start
   ^.*output\s+rate\s+${output_rate}\s+\w+/sec,\s+${output_pps}\s+packets.+$$
   ^\s+${input_packets}\s+packets\s+input,\s+\d+\s+bytes,\s+\d+\s+no\s+buffer\s*$$
   ^\s+${runts}\s+runts,\s+${giants}\s+giants,\s+\d+\s+throttles\s*$$
-  ^\s+${input_errors}\s+input\s+errors,\s+${crc}\s+crc,\s+${frame}\s+frame,\s+${overrun}\s+overrun,\s+\d+\s+ignored\s*$$
-  ^\s+${input_errors}\s+input\s+errors,\s+${crc}\s+crc,\s+${frame}\s+frame,\s+${overrun}\s+overrun,\s+\d+\s+ignored,\s+${abort}\s+abort\s*$$
+  ^\s+${input_errors}\s+input\s+errors,\s+${crc}\s+(crc|CRC),\s+${frame}\s+frame,\s+${overrun}\s+overrun,\s+\d+\s+ignored\s*$$
+  ^\s+${input_errors}\s+input\s+errors,\s+${crc}\s+(crc|CRC),\s+${frame}\s+frame,\s+${overrun}\s+overrun,\s+\d+\s+ignored,\s+${abort}\s+abort\s*$$
   ^\s+${output_packets}\s+packets\s+output,\s+\d+\s+bytes,\s+\d+\s+underruns\s*$$
   ^\s+${output_errors}\s+output\s+errors,\s+\d+\s+collisions,\s+\d+\s+interface\s+resets\s*$$
   # Capture time-stamp if vty line has command time-stamping turned on
