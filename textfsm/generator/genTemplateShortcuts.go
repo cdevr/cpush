@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/cdevr/cpush/textfsm"
 	"github.com/cdevr/cpush/utils"
 	"log"
 	"os"
@@ -19,62 +20,43 @@ var (
 	dir = flag.String("dir", "templates", "where to find the textfsm templates")
 )
 
-// Converts a string to CamelCase
-func toCamel(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return s
-	}
+type shortCutFuncData struct {
+	Name           string
+	QuotedTemplate string
+}
 
-	n := strings.Builder{}
-	n.Grow(len(s))
-	capNext := true
-	prevIsCap := false
-	for i, v := range []byte(s) {
-		vIsCap := v >= 'A' && v <= 'Z'
-		vIsLow := v >= 'a' && v <= 'z'
-		if capNext {
-			if vIsLow {
-				v += 'A'
-				v -= 'a'
-			}
-		} else if i == 0 {
-			if vIsCap {
-				v += 'a'
-				v -= 'A'
-			}
-		} else if prevIsCap && vIsCap {
-			v += 'a'
-			v -= 'A'
-		}
-		prevIsCap = vIsCap
+type typedShortCutFuncData struct {
+	Name string
+	FSM  *textfsm.TextFSM
+}
 
-		if vIsCap || vIsLow {
-			n.WriteByte(v)
-			capNext = false
-		} else if vIsNum := v >= '0' && v <= '9'; vIsNum {
-			n.WriteByte(v)
-			capNext = true
-		} else {
-			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
+func IsList(v textfsm.Value) bool {
+	for _, o := range v.Options {
+		if o == "List" {
+			return true
 		}
 	}
-	return n.String()
+	return false
 }
 
 const (
 	parseShortcutFnTemplate = `
 const {{.Name}}Template = {{.QuotedTemplate}}
 
-func Parse{{.Name}} (input string)  ([]map[string]interface{}, error) {
+func Parse{{.Name}}(input string)  ([]map[string]interface{}, error) {
 	return Parse({{.Name}}Template, input, true)
 }`
-)
-
-type shortCutFuncData struct {
-	Name           string
-	QuotedTemplate string
+	parseTypeShortcutFnTemplate = `
+type {{.Name}}Row struct { {{range $name, $val := .FSM.Values}}
+	{{FixFieldName $name}} {{if IsList $val}}[]string{{else}}string{{end}}{{end}}
 }
+
+func ParseTyped{{.Name}}(input string) ([]{{.Name}}Row, error) {
+	result, err := ParseIntoStruct([]{{.Name}}Row{}, {{.Name}}Template, input, true)
+	return result.([]{{.Name}}Row), err
+}
+`
+)
 
 func main() {
 	flag.Parse()
@@ -88,18 +70,35 @@ func main() {
 
 	fmt.Fprintf(b, "package textfsm\n\n")
 
+	typedShortcutFuncs := template.FuncMap{
+		"IsList":       IsList,
+		"FixFieldName": textfsm.FixFieldName,
+	}
+
 	tmpl := template.Must(template.New("parseShortcutFnTemplate").Parse(parseShortcutFnTemplate))
+	typedTmpl := template.Must(template.New("parseTypedShortcutFnTempalte").Funcs(typedShortcutFuncs).Parse(parseTypeShortcutFnTemplate))
 	for _, templateFn := range templates {
 		tTmpl, err := os.ReadFile(templateFn)
 		if err != nil {
 			log.Fatalf("failed to read template %q: %v", templateFn, err)
 		}
+		tTmplStr := string(tTmpl)
+		fsm, err := textfsm.NewTextFSM(tTmplStr)
+		if err != nil {
+			log.Fatalf("failed to parse template %q into textFSM: %v", templateFn, err)
+		}
 
 		fn := path.Base(templateFn)
-		camelName := toCamel(strings.TrimSuffix(fn, filepath.Ext(fn)))
+		camelName := textfsm.ToCamel(strings.TrimSuffix(fn, filepath.Ext(fn)))
 
 		data := shortCutFuncData{camelName, fmt.Sprintf("%q", tTmpl)}
 		err = tmpl.Execute(b, data)
+		if err != nil {
+			log.Fatalf("failed to execute function generation template: %v", err)
+		}
+
+		data2 := typedShortCutFuncData{camelName, fsm}
+		err = typedTmpl.Execute(b, data2)
 		if err != nil {
 			log.Fatalf("failed to execute function generation template: %v", err)
 		}

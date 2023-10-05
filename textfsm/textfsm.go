@@ -23,6 +23,15 @@ func Parse(template, input string, eof bool) ([]map[string]interface{}, error) {
 	return fsm.Parse(input, eof)
 }
 
+func ParseIntoStruct(into any, template, input string, eof bool) (any, error) {
+	fsm, err := NewTextFSM(template)
+	if err != nil {
+		return nil, err
+	}
+
+	return fsm.ParseToStruct(into, input, eof)
+}
+
 func (fsm *TextFSM) Parse(input string, eof bool) ([]map[string]interface{}, error) {
 	if fsm == nil {
 		return nil, fmt.Errorf("fsm not initialized")
@@ -64,9 +73,11 @@ func (fsm *TextFSM) ParseToStruct(into any, input string, eof bool) (any, error)
 
 	for _, row := range parserOutput.Dict {
 		newRowPtr := reflect.New(rvType)
-		for i := 0; i < newRowPtr.Elem().NumField(); i++ {
-			fieldName := newRowPtr.Elem().Type().Field(i).Name
-			newRowPtr.Elem().Field(i).Set(reflect.ValueOf(row[fieldName]))
+		for key, val := range row {
+			// fieldName := FixFieldName(newRowPtr.Elem().Type().Field(i).Name)
+			// log.Printf("row[%q]: %#v", fieldName, row[fieldName])
+			fieldName := FixFieldName(key)
+			newRowPtr.Elem().FieldByName(fieldName).Set(reflect.ValueOf(val))
 		}
 		intoValue = reflect.Append(intoValue, newRowPtr.Elem())
 	}
@@ -499,6 +510,59 @@ type Value struct {
 	Options       []string
 	curval        interface{}
 	filldownValue interface{}
+}
+
+// ToCamel converts a string to CamelCase
+func ToCamel(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+
+	n := strings.Builder{}
+	n.Grow(len(s))
+	capNext := true
+	prevIsCap := false
+	for i, v := range []byte(s) {
+		vIsCap := v >= 'A' && v <= 'Z'
+		vIsLow := v >= 'a' && v <= 'z'
+		if capNext {
+			if vIsLow {
+				v += 'A'
+				v -= 'a'
+			}
+		} else if i == 0 {
+			if vIsCap {
+				v += 'a'
+				v -= 'A'
+			}
+		} else if prevIsCap && vIsCap {
+			v += 'a'
+			v -= 'A'
+		}
+		prevIsCap = vIsCap
+
+		if vIsCap || vIsLow {
+			n.WriteByte(v)
+			capNext = false
+		} else if vIsNum := v >= '0' && v <= '9'; vIsNum {
+			n.WriteByte(v)
+			capNext = true
+		} else {
+			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
+		}
+	}
+	return n.String()
+}
+
+func FixFieldName(fn string) string {
+	if fn == "interface" {
+		return "Intf"
+	}
+	if len(fn) > 1 {
+		return ToCamel(fn)
+	}
+	return fn
 }
 
 func isValidOption(str string) bool {
