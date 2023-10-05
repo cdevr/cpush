@@ -15,19 +15,31 @@ import (
 //go:generate go run generator/genTemplateShortcuts.go -out shortcuts.go
 
 func Parse(template, input string, eof bool) ([]map[string]interface{}, error) {
-	fsm := TextFSM{}
-	err := fsm.ParseString(template)
+	fsm, err := NewTextFSM(template)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template: %v", err)
+		return nil, err
 	}
 
+	return fsm.Parse(input, eof)
+}
+
+func (fsm TextFSM) Parse(input string, eof bool) ([]map[string]interface{}, error) {
 	parserOutput := &ParserOutput{}
-	err = parserOutput.ParseTextString(input, fsm, eof)
+	err := parserOutput.ParseTextString(input, fsm, eof)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process input: %v", err)
 	}
 
 	return parserOutput.Dict, nil
+}
+
+func NewTextFSM(template string) (*TextFSM, error) {
+	fsm := &TextFSM{}
+	err := fsm.ParseString(template)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %v", err)
+	}
+	return fsm, nil
 }
 
 type State struct {
@@ -158,26 +170,26 @@ type TextFSM struct {
 }
 
 // ParseString parses a string into a TextFSM structure.
-func (t *TextFSM) ParseString(input string) error {
-	return t.ParseReader(strings.NewReader(input))
+func (fsm *TextFSM) ParseString(input string) error {
+	return fsm.ParseReader(strings.NewReader(input))
 }
 
-func (t *TextFSM) ParseReader(reader *strings.Reader) error {
-	return t.ParseScanner(bufio.NewScanner(reader))
+func (fsm *TextFSM) ParseReader(reader *strings.Reader) error {
+	return fsm.ParseScanner(bufio.NewScanner(reader))
 }
 
-func (t *TextFSM) ParseScanner(scanner *bufio.Scanner) error {
-	t.CommentRe = regexp.MustCompile(`^\s*#`)
-	t.StateRe = regexp.MustCompile(`^(\w+)$`)
-	t.MaxStateNameLen = 48
-	t.lineNum = 0
-	err := t.parseFSMVariables(scanner)
+func (fsm *TextFSM) ParseScanner(scanner *bufio.Scanner) error {
+	fsm.CommentRe = regexp.MustCompile(`^\s*#`)
+	fsm.StateRe = regexp.MustCompile(`^(\w+)$`)
+	fsm.MaxStateNameLen = 48
+	fsm.lineNum = 0
+	err := fsm.parseFSMVariables(scanner)
 	if err != nil {
 		return err
 	}
-	t.States = make(map[string]State)
+	fsm.States = make(map[string]State)
 	for {
-		done, err := t.parseFSMStates(scanner)
+		done, err := fsm.parseFSMStates(scanner)
 		if err != nil {
 			return err
 		}
@@ -185,7 +197,7 @@ func (t *TextFSM) ParseScanner(scanner *bufio.Scanner) error {
 			break
 		}
 	}
-	err = t.validateFSM()
+	err = fsm.validateFSM()
 	if err != nil {
 		return err
 	}
@@ -200,17 +212,17 @@ func (t *TextFSM) ParseScanner(scanner *bufio.Scanner) error {
 //	      scanner: Scanner to read through lines
 //		   Returns:
 //	      returns error if there is any error while parsing. nil otherwise.
-func (t *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
-	t.Values = make(map[string]Value)
-	t.lineNum = 0
+func (fsm *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
+	fsm.Values = make(map[string]Value)
+	fsm.lineNum = 0
 	for {
-		t.lineNum++
+		fsm.lineNum++
 		linePresent := scanner.Scan()
 		if !linePresent {
 			if err := scanner.Err(); err != nil {
-				return fmt.Errorf("%d Line: Scanner Error %s", t.lineNum, err)
+				return fmt.Errorf("%d Line: Scanner Error %s", fsm.lineNum, err)
 			}
-			if t.lineNum == 1 {
+			if fsm.lineNum == 1 {
 				return fmt.Errorf("null template")
 			}
 			return fmt.Errorf("no State definition found")
@@ -222,20 +234,20 @@ func (t *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
 			return nil
 		}
 		// Skip commented lines.
-		if t.CommentRe.MatchString(line) {
+		if fsm.CommentRe.MatchString(line) {
 			continue
 		}
 		if strings.HasPrefix(line, "Value ") {
 			value := Value{}
-			err := value.Parse(line, t.lineNum)
+			err := value.Parse(line, fsm.lineNum)
 			if err != nil {
 				return err
 			}
-			t.Values[value.Name] = value
-		} else if len(t.Values) == 0 {
+			fsm.Values[value.Name] = value
+		} else if len(fsm.Values) == 0 {
 			return fmt.Errorf("no Value definitions found")
 		} else {
-			return fmt.Errorf("expected blank line after last Value entry. Line: %d", t.lineNum)
+			return fmt.Errorf("expected blank line after last Value entry. Line: %d", fsm.lineNum)
 		}
 	}
 }
@@ -254,38 +266,38 @@ func (t *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
 //
 //			done bool: true if there are no lines left in the file. false if there are lines left to parse
 //	     Error if there is any error. nil otherwise
-func (t *TextFSM) parseFSMStates(scanner *bufio.Scanner) (done bool, err error) {
+func (fsm *TextFSM) parseFSMStates(scanner *bufio.Scanner) (done bool, err error) {
 	for {
-		t.lineNum++
+		fsm.lineNum++
 		linePresent := scanner.Scan()
 		if !linePresent {
 			if err := scanner.Err(); err != nil {
-				return true, fmt.Errorf("%d Line: Scanner Error %s", t.lineNum, err)
+				return true, fmt.Errorf("%d Line: Scanner Error %s", fsm.lineNum, err)
 			}
-			if len(t.States) == 0 {
+			if len(fsm.States) == 0 {
 				return true, fmt.Errorf("no State definition found")
 			}
 			return true, nil
 		}
 		line := scanner.Text()
 		line = TrimRightSpace(line)
-		if line == "" || t.CommentRe.MatchString(line) {
+		if line == "" || fsm.CommentRe.MatchString(line) {
 			continue
 		}
 		// First line is state definition
-		if !t.StateRe.MatchString(line) {
-			return false, fmt.Errorf("%d Line: Invalid state name '%s'", t.lineNum, line)
+		if !fsm.StateRe.MatchString(line) {
+			return false, fmt.Errorf("%d Line: Invalid state name '%s'", fsm.lineNum, line)
 		}
-		if len(line) > t.MaxStateNameLen {
-			return false, fmt.Errorf("%d Line: state name too long. Should be < %d chars", t.lineNum, len(line))
+		if len(line) > fsm.MaxStateNameLen {
+			return false, fmt.Errorf("%d Line: state name too long. Should be < %d chars", fsm.lineNum, len(line))
 		}
 		if FindIndex(LineOperators, line) >= 0 || FindIndex(RecordOperators, line) >= 0 {
-			return false, fmt.Errorf("%d Line: state '%s' can not be a keyword", t.lineNum, line)
+			return false, fmt.Errorf("%d Line: state '%s' can not be a keyword", fsm.lineNum, line)
 		}
-		if _, exists := t.States[line]; exists {
-			return false, fmt.Errorf("%d Line: Duplicate state name '%s'", t.lineNum, line)
+		if _, exists := fsm.States[line]; exists {
+			return false, fmt.Errorf("%d Line: Duplicate state name '%s'", fsm.lineNum, line)
 		}
-		state := State{name: line, fsm: t}
+		state := State{name: line, fsm: fsm}
 		done, err = state.parseFSMRules(scanner)
 		if err == nil {
 			state.fsm.States[line] = state
@@ -348,27 +360,27 @@ func (t *State) parseFSMRules(scanner *bufio.Scanner) (done bool, err error) {
 // Returns:
 //
 //	error if the FSM is invalid
-func (t *TextFSM) validateFSM() error {
+func (fsm *TextFSM) validateFSM() error {
 	// Must have 'Start' state.
-	if _, exists := t.States["Start"]; !exists {
+	if _, exists := fsm.States["Start"]; !exists {
 		return fmt.Errorf("missing state 'Start'")
 	}
 	// 'End/EOF' state (if specified) must be empty.
-	if state, exists := t.States["End"]; exists {
+	if state, exists := fsm.States["End"]; exists {
 		if state.rules != nil && len(state.rules) > 0 {
 			return fmt.Errorf("non-Empty 'End' state")
 		} else {
 			// Remove 'End' state.
-			delete(t.States, "End")
+			delete(fsm.States, "End")
 		}
 	}
-	if state, exists := t.States["EOF"]; exists {
+	if state, exists := fsm.States["EOF"]; exists {
 		if state.rules != nil && len(state.rules) > 0 {
 			return fmt.Errorf("non-Empty 'EOF' state")
 		}
 	}
 	// Ensure jump states are all valid.
-	for name, state := range t.States {
+	for name, state := range fsm.States {
 		for _, rule := range state.rules {
 			if rule.LineOp == "Error" {
 				continue
@@ -376,7 +388,7 @@ func (t *TextFSM) validateFSM() error {
 			if rule.NewState == "" || rule.NewState == "End" || rule.NewState == "EOF" {
 				continue
 			}
-			if _, exists := t.States[rule.NewState]; !exists {
+			if _, exists := fsm.States[rule.NewState]; !exists {
 				return fmt.Errorf("state '%s' not found, referenced in state '%s'", rule.NewState, name)
 			}
 		}
