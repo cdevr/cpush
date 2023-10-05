@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/cdevr/cpush/checks"
 	"github.com/cdevr/cpush/options"
 	"io"
 	"log"
@@ -17,9 +18,6 @@ import (
 	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/configfile"
 	"github.com/cdevr/cpush/pwcache"
-	"github.com/cdevr/cpush/shell"
-	"github.com/cdevr/cpush/utils"
-
 	"golang.org/x/net/proxy"
 )
 
@@ -66,23 +64,19 @@ func GetUser() string {
 	return username
 }
 
-type routerOutput struct {
-	router string
-	output string
-}
-
 type routerError struct {
 	router string
 	err    error
 }
 
-// CmdDevices executes a command on many devices, prints the output.
-func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, username string, password string, cmd string) {
+func CheckRouters(opts *options.Options, concurrentLimit int, devices []string, username string, password string) {
+	checkCommands := checks.GetCheckCommands()
+
 	var wg sync.WaitGroup
 
 	deviceChan := make(chan string)
 
-	outputs := make(chan routerOutput)
+	outputs := make(chan []checks.CheckResult)
 	errors := make(chan routerError)
 
 	done := make(chan bool)
@@ -93,24 +87,18 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	startCount := 0
 	endedCount := 0
 
-	doDevice := func(device string) (string, error) {
-		started <- true
-		defer func() { ended <- true }()
+	checkDevice := func(device string) ([]checks.CheckResult, error) {
+		cmdResults := map[string]string{}
 
-		var output string
-		var err error
-		done := make(chan bool)
-		go func() {
-			output, err = cisco.Cmd(opts, device, username, password, cmd)
-			done <- true
-		}()
-
-		select {
-		case <-done:
-			return output, err
-		case <-time.After(*timeout):
-			return "", fmt.Errorf("router %q hit timeout after %v", device, *timeout)
+		for _, cmd := range checkCommands {
+			output, err := cisco.Cmd(opts, device, username, password, cmd)
+			if err != nil {
+				return nil, err
+			}
+			cmdResults[cmd] = output
 		}
+
+		return checks.Check(device, cmdResults)
 	}
 
 	worker := func() {
@@ -118,11 +106,11 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	devices:
 		for device := range deviceChan {
 			for itry := 0; itry < *retries; itry += 1 {
-				output, err := doDevice(device)
+				output, err := checkDevice(device)
 				if err != nil {
 					errors <- routerError{device, err}
 				} else {
-					outputs <- routerOutput{device, output}
+					outputs <- output
 					continue devices
 				}
 				fmt.Fprintf(os.Stderr, "Retrying %q: %d/%d", device, itry, *retries)
@@ -165,23 +153,8 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		case re := <-errors:
 			fmt.Fprintf(os.Stderr, "\rerror on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
-			if *logOutputTemplate != "" {
-				fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
-				err := utils.ReplaceFile(fn, utils.Dos2Unix(output.output))
-				if err != nil {
-					log.Printf("failed to save output for router %q: %v", output.router, err)
-				}
-			}
-
-			lines := strings.Split(output.output, "\n")
-			for _, line := range lines {
-				if !*suppressOutput {
-					if *showDeviceName {
-						fmt.Printf("%s: %s\n", output.router, line)
-					} else {
-						fmt.Printf("%s\n", line)
-					}
-				}
+			for _, cr := range output {
+				fmt.Printf("%s %s: %s", cr.CheckName, cr.Device, cr.Result)
 			}
 		case <-done:
 			allDone = true
@@ -222,16 +195,8 @@ func main() {
 	// Allow device and command arguments to be passed in as non-args.
 	if *device == "" && *deviceList == "" && *deviceFile == "" {
 		*device = flag.Arg(0)
-		*interactive = true
-	} else if *device == "" && *command == "" && flag.NArg() >= 2 {
-		*device = flag.Arg(0)
-		*command = strings.Join(flag.Args()[1:], " ")
 	}
 
-	if *command == "" && *push == "" && *interactive == false {
-		log.Printf("you didn't pass in a command or a confliglet")
-		return
-	}
 	if *username == "" {
 		*username = GetUser()
 	}
@@ -254,58 +219,27 @@ func main() {
 		return
 	}
 
-	if *device != "" {
-		if *interactive {
-			err = shell.Interactive(opts, *device, *username, password)
-			if err != nil {
-				log.Fatalf("failed to start interactive shell: %v", err)
-			}
-			return
-		}
-		var output string
-		if *command != "" {
-			output, err = cisco.Cmd(opts, *device, *username, password, *command)
-			if err != nil {
-				log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
-			}
-		}
-		if *push != "" {
-			output, err = cisco.Push(opts, *device, *username, password, *push)
-			if err != nil {
-				log.Fatalf("failed to commit configlet %q on device %q: %v", *command, *device, err)
-			}
-		}
-		if *logOutputTemplate != "" {
-			fn := strings.ReplaceAll(*logOutputTemplate, "%s", *device)
-			err := utils.AppendToFile(fn, utils.Dos2Unix(output))
-			if err != nil {
-				log.Printf("failed to save output for router %q: %v", *device, err)
-			}
-		}
-		if !*suppressOutput {
-			fmt.Printf("%s\n", output)
-		}
-	} else if *deviceList != "" {
-		devices := strings.Split(*deviceList, ",")
+	var devices []string
 
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
+	if *device != "" {
+		devices = []string{*device}
+	} else if *deviceList != "" {
+		devices = filterEmptyDevices(strings.Split(*deviceList, ","))
 	} else if *deviceFile != "" {
 		fileLines, err := os.ReadFile(*deviceFile)
 		if err != nil {
 			log.Fatalf("failed to read device file %q: %v", *deviceFile, err)
 		}
-		devices := strings.Split(string(fileLines), "\n")
-
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
+		devices = filterEmptyDevices(strings.Split(string(fileLines), "\n"))
 	} else if *deviceStdIn {
 		fileLines, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			log.Fatalf("failed to read devices from stdin %q: %v", *deviceFile, err)
 		}
-		devices := strings.Split(string(fileLines), "\n")
-
-		CmdDevices(opts, *concurrentLimit, devices, *username, password, *command)
+		devices = filterEmptyDevices(strings.Split(string(fileLines), "\n"))
 	}
+
+	CheckRouters(opts, *concurrentLimit, devices, *username, password)
 	os.Exit(0)
 }
 

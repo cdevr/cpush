@@ -11,13 +11,13 @@ type CheckResult struct {
 	Result    string
 }
 
-type Check struct {
+type CheckData struct {
 	Name     string
 	Commands []string
-	Func     func(router string, cmdResults map[string]string) ([]CheckResult, error)
+	F        func(router string, cmdResults map[string]string) ([]CheckResult, error)
 }
 
-var Checks = []Check{
+var Checks = []CheckData{
 	{
 		"Interfaces",
 		[]string{"show interfaces"},
@@ -25,12 +25,32 @@ var Checks = []Check{
 	},
 }
 
+func GetCheckCommands() []string {
+	var result []string
+	for _, check := range Checks {
+		result = append(result, check.Commands...)
+	}
+	return result
+}
+
+func Check(device string, cmdResults map[string]string) ([]CheckResult, error) {
+	var result []CheckResult
+	for _, c := range Checks {
+		checkResults, err := c.F(device, cmdResults)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, checkResults...)
+	}
+	return result, nil
+}
+
 func CheckInterfaces(router string, cmdResults map[string]string) ([]CheckResult, error) {
 	var results []CheckResult
 
 	interfaceResults, err := textfsm.ParseTypedCiscoIosShowInterfaces(cmdResults["show interfaces"])
 	if err != nil {
-		return nil, fmt.Errorf("Couldnt parse interfaces result")
+		return nil, fmt.Errorf("couldnt parse interfaces result")
 	}
 
 	for _, ir := range interfaceResults {
