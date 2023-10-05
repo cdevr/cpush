@@ -23,14 +23,54 @@ func Parse(template, input string, eof bool) ([]map[string]interface{}, error) {
 	return fsm.Parse(input, eof)
 }
 
-func (fsm TextFSM) Parse(input string, eof bool) ([]map[string]interface{}, error) {
+func (fsm *TextFSM) Parse(input string, eof bool) ([]map[string]interface{}, error) {
+	if fsm == nil {
+		return nil, fmt.Errorf("fsm not initialized")
+	}
+
 	parserOutput := &ParserOutput{}
-	err := parserOutput.ParseTextString(input, fsm, eof)
+	err := parserOutput.ParseTextString(input, *fsm, eof)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process input: %v", err)
 	}
 
 	return parserOutput.Dict, nil
+}
+
+// ParseToStruct parses the input, according to the TextFSM template into the "into"
+// parameter, that needs to be a []Struct. The Struct needs to have the
+// same fields as the Values in the TextFSM.
+func (fsm *TextFSM) ParseToStruct(into any, input string, eof bool) (any, error) {
+	if fsm == nil {
+		return nil, fmt.Errorf("fsm not initialized")
+	}
+
+	parserOutput := &ParserOutput{}
+	err := parserOutput.ParseTextString(input, *fsm, eof)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process input: %v", err)
+	}
+
+	rtype := reflect.TypeOf(into)
+	if rtype.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("please pass in a variable of type []struct")
+	}
+	rvType := rtype.Elem()
+	if rvType.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("please pass in a variable of type []struct")
+	}
+
+	intoValue := reflect.ValueOf(into)
+
+	for _, row := range parserOutput.Dict {
+		newRowPtr := reflect.New(rvType)
+		for i := 0; i < newRowPtr.Elem().NumField(); i++ {
+			fieldName := newRowPtr.Elem().Type().Field(i).Name
+			newRowPtr.Elem().Field(i).Set(reflect.ValueOf(row[fieldName]))
+		}
+		intoValue = reflect.Append(intoValue, newRowPtr.Elem())
+	}
+	return intoValue.Interface(), nil
 }
 
 func NewTextFSM(template string) (*TextFSM, error) {
@@ -83,6 +123,7 @@ func (r *Rule) String() string {
 	}
 	return sb.String()
 }
+
 func (r *Rule) Parse(line string, lineNum int, varMap map[string]interface{}) error {
 	r.LineNum = lineNum
 	// Implicit default is '(regexp) -> Next.NoRecord'

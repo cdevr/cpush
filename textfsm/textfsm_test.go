@@ -775,3 +775,45 @@ func TestExample(t *testing.T) {
 		t.Logf("%#v", got)
 	}
 }
+
+type exampleRow struct {
+	Heading string
+	Detail  []string
+}
+
+func TestExampleStruct(t *testing.T) {
+	templateFn := "testdata/example.textfsm"
+	template := ReadFile(templateFn, t)
+
+	fsm, err := NewTextFSM(template)
+	if err != nil {
+		t.Fatalf("failed to parse example template at %q: %v", templateFn, err)
+	}
+
+	exampleFn := "testdata/example"
+	example := ReadFile(exampleFn, t)
+
+	var data []exampleRow
+	val, err := fsm.ParseToStruct(data, example, true)
+	data = val.([]exampleRow)
+
+	if err != nil {
+		t.Fatalf("failed to parse example input: %v", err)
+	}
+
+	want := []exampleRow{
+		{
+			Heading: "heading",
+			Detail:  []string{"detail1", "detail2"},
+		},
+		{
+			Heading: "heading2",
+			Detail:  []string{"detail3", "detail4"},
+		},
+	}
+
+	if diff := deep.Equal(data, want); diff != nil {
+		t.Error(diff)
+		t.Logf("%#v", data)
+	}
+}

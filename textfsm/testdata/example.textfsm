@@ -1,11 +1,11 @@
-Value heading ([^\s].*)
-Value List detail (.*)
+Value Heading ([^\s].*)
+Value List Detail (.*)
 
 Start
-  ^${heading} -> heading
+  ^${Heading} -> heading
 
 heading
-  ^\s${detail}
+  ^\s${Detail}
   # If you find a new heading, don't yet read it into the "heading" field, first record it.
   ^.* -> Continue.Record
-  ^${heading}
+  ^${Heading}
