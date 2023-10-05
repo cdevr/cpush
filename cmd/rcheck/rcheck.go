@@ -154,7 +154,7 @@ func CheckRouters(opts *options.Options, concurrentLimit int, devices []string, 
 			fmt.Fprintf(os.Stderr, "\rerror on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
 			for _, cr := range output {
-				fmt.Printf("%s %s: %s", cr.CheckName, cr.Device, cr.Result)
+				fmt.Printf("%s %s: %s\n", cr.CheckName, cr.Device, cr.Result)
 			}
 		case <-done:
 			allDone = true
