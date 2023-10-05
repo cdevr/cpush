@@ -45,18 +45,18 @@ var (
 	logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
 
 	version = flag.Bool("version", false, "print version and exit")
+
+	username = flag.String("username", "", "username to use for login")
+
+	retries         = flag.Int("retries", 3, "retries (per device)")
+	timeout         = flag.Duration("timeout", 10*time.Second, "timeout for the command")
+	concurrentLimit = flag.Int("limit", 25, "maximum number of simultaneous devices")
+
+	cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
+	clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
+
+	socks = flag.String("socks", "", "proxy to use")
 )
-
-var username = flag.String("username", "", "username to use for login")
-
-var retries = flag.Int("retries", 3, "retries (per device)")
-var timeout = flag.Duration("timeout", 10*time.Second, "timeout for the command")
-var concurrentLimit = flag.Int("limit", 25, "maximum number of simultaneous devices")
-
-var cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
-var clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
-
-var socks = flag.String("socks", "", "proxy to use")
 
 func GetUser() string {
 	cur, err := user.Current()
