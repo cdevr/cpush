@@ -12,7 +12,8 @@ import (
 )
 
 const noMore = "terminal length 0" // Command to disable "more" prompt on cisco routers.
-const exitCommand = "exit"         // Command to disable "more" prompt on cisco routers.
+const exitCommand = "exit"
+const wrCommand = "wr"
 
 const startTclSh = "tclsh"
 const configTemplateOpen = "puts [open \"flash:configlet\" w+] {"
@@ -153,6 +154,10 @@ func Push(opts *options.Options, device string, username string, password string
 		if _, err := stdinBuf.Write([]byte(confirm + "\r")); err != nil {
 			return "", fmt.Errorf("failed to run command %q on device %q: %v", confirm, device, err)
 		}
+	}
+	time.Sleep(200 * time.Millisecond)
+	if _, err := stdinBuf.Write([]byte(wrCommand + "\r")); err != nil {
+		return "", fmt.Errorf("failed to run command %q on device %q: %v", wrCommand, device, err)
 	}
 	time.Sleep(200 * time.Millisecond)
 	if _, err := stdinBuf.Write([]byte(exitCommand + "\r")); err != nil {

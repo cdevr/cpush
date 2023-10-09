@@ -7,5 +7,5 @@ all:
 test:
 	go test ./...
 
-install: all test
+install: all 
 	go install ./cmd/cpush

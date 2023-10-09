@@ -4,7 +4,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/cdevr/cpush/options"
 	"io"
 	"log"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cdevr/cpush/options"
 
 	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/configfile"
@@ -32,7 +33,7 @@ var (
 	deviceList  = flag.String("devices", "", "comma-separated list of routers")
 
 	command     = flag.String("cmd", "", "a command to execute")
-	push        = flag.String("push", "", "something put into the configuration")
+	push        = flag.String("push", "", "something put into the configuration. If it has file: prefix, it will be read from that file")
 	interactive = flag.Bool("i", false, "create an interactive shell on the device")
 
 	suppressBanner   = flag.Bool("suppress_banner", true, "suppress the SSH banner and login")
@@ -284,9 +285,19 @@ Other flags are:`)
 			}
 		}
 		if *push != "" {
-			output, err = cisco.Push(opts, *device, *username, password, *push)
+			topush := *push
+			if strings.HasPrefix(topush, "file:") {
+				fn := topush[5:]
+				topushBytes, err := os.ReadFile(fn)
+				if err != nil {
+					log.Fatalf("failed to read push lines from %q: %v", fn, err)
+				}
+				topush = string(topushBytes)
+			}
+			log.Printf("pushing to %q: %q", *device, topush)
+			output, err = cisco.Push(opts, *device, *username, password, topush)
 			if err != nil {
-				log.Fatalf("failed to commit configlet %q on device %q: %v", *command, *device, err)
+				log.Fatalf("failed to commit configlet %q on device %q: %v", topush, *device, err)
 			}
 		}
 		if *logOutputTemplate != "" {
