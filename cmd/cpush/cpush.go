@@ -4,7 +4,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/user"
@@ -27,10 +26,7 @@ import (
 //go:generate go run tagBuild.go
 
 var (
-	device      = flag.String("device", "", "a device to execute commands on")
-	deviceFile  = flag.String("devicefile", "", "file with a list of device to execute commands on. One device per line")
-	deviceStdIn = flag.Bool("devicestdin", false, "read list of devices from stdin (don't forget to CTRL-D, or provide EOF)")
-	deviceList  = flag.String("devices", "", "comma-separated list of routers")
+	device = flag.String("device", "", "a device to execute commands on")
 
 	command     = flag.String("cmd", "", "a command to execute")
 	push        = flag.String("push", "", "something put into the configuration. If it has file: prefix, it will be read from that file")
@@ -235,7 +231,7 @@ Other flags are:`)
 		return
 	}
 	// Allow device and command arguments to be passed in as non-args.
-	if *device == "" && *deviceList == "" && *deviceFile == "" && flag.NArg() == 1 && *command == "" && *push == "" {
+	if *device == "" && flag.NArg() == 1 && *command == "" && *push == "" {
 		*device = flag.Arg(0)
 		*interactive = true
 	} else if *device == "" && *command == "" && flag.NArg() >= 2 {
@@ -310,26 +306,19 @@ Other flags are:`)
 		if !*suppressOutput {
 			fmt.Printf("%s\n", output)
 		}
-	} else if *deviceList != "" {
-		devices := strings.Split(*deviceList, ",")
+	} else if strings.Contains(*device, ",") {
+		devices := strings.Split(*device, ",")
 
 		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
-	} else if *deviceFile != "" {
-		fileLines, err := os.ReadFile(*deviceFile)
+	} else if strings.HasPrefix(*device, "file:") {
+		deviceFn := (*device)[5:]
+		fileLines, err := os.ReadFile(deviceFn)
 		if err != nil {
-			log.Fatalf("failed to read device file %q: %v", *deviceFile, err)
+			log.Fatalf("failed to read device file %q: %v", deviceFn, err)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
 		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
-	} else if *deviceStdIn {
-		fileLines, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			log.Fatalf("failed to read devices from stdin %q: %v", *deviceFile, err)
-		}
-		devices := strings.Split(string(fileLines), "\n")
-
-		CmdDevices(opts, *concurrentLimit, devices, *username, password, *command)
 	}
 	os.Exit(0)
 }
