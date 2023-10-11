@@ -256,14 +256,14 @@ func (fsm *TextFSM) ParseScanner(scanner *bufio.Scanner) error {
 	return nil
 }
 
-// Extracts Variables from start of template file.
+// parseFSMVariables extracts variables from start of template file.
 //
 //	    Values are expected as a contiguous block at the head of the file.
 //	    These will be line separated from the State definitions that follow.
 //	    Args:
 //	      scanner: Scanner to read through lines
 //		   Returns:
-//	      returns error if there is any error while parsing. nil otherwise.
+//	      returns error if there is any error while parsing. Nil otherwise.
 func (fsm *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
 	fsm.Values = make(map[string]Value)
 	fsm.lineNum = 0
@@ -304,8 +304,8 @@ func (fsm *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
 	}
 }
 
-// parseFSMStates extracts State and associated Rules from body of template file.
-// After the Value definitions the remainder of the template is
+// parseFSMStates extracts "State" and associated Rules from body of template file.
+// After the "Value" definitions the remainder of the template is
 // state definitions. The routine is expected to be called iteratively
 // until no more states remain - indicated by returning None.
 // The routine checks that the state names are a well-formed string, do
@@ -316,8 +316,8 @@ func (fsm *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
 //
 // Returns:
 //
-//			done bool: true if there are no lines left in the file. false if there are lines left to parse
-//	     Error if there is any error. nil otherwise
+//	  done: true if there are no lines left in the file. false if there are lines left to parse
+//		 err: if there is any error. nil otherwise
 func (fsm *TextFSM) parseFSMStates(scanner *bufio.Scanner) (done bool, err error) {
 	for {
 		fsm.lineNum++

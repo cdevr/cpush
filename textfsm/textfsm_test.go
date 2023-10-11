@@ -93,7 +93,7 @@ var (
 	}
 
 	showInterfaceResult2 = []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"interface":        "ATM0",
 			"description":      "descripting descriptions",
 			"abort":            "0",
@@ -131,7 +131,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "BRI0",
 			"description":      "",
 			"abort":            "0",
@@ -169,7 +169,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"abort":            "0",
 			"interface":        "BRI0:1",
 			"description":      "",
@@ -207,7 +207,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "BRI0:2",
 			"description":      "",
 			"abort":            "0",
@@ -245,7 +245,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "Ethernet0",
 			"description":      "",
 			"abort":            "",
@@ -283,7 +283,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"interface":        "GigabitEthernet0",
 			"description":      "Not Managed Interface <LI:C>",
 			"bandwidth":        "1000000 Kbit",
@@ -320,7 +320,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"interface":        "GigabitEthernet1",
 			"description":      "Not Managed Interface <LI:C>",
 			"bandwidth":        "1000000 Kbit",
@@ -357,7 +357,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"interface":        "GigabitEthernet2",
 			"description":      "Not Managed Interface <LI:C>",
 			"bandwidth":        "1000000 Kbit",
@@ -394,7 +394,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "GigabitEthernet3",
 			"description":      "Not Managed Interface <LI:C>",
 			"abort":            "",
@@ -432,7 +432,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"interface":        "GigabitEthernet4",
 			"description":      "Not Managed Interface <LI:C>",
 			"bandwidth":        "1000000 Kbit",
@@ -469,7 +469,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "GigabitEthernet5",
 			"description":      "Not Managed Interface <LI:C>",
 			"abort":            "",
@@ -507,7 +507,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"bandwidth":        "1000000 Kbit",
 			"bia_mac_address":  "80e0.1ded.6e91",
 			"crc":              "0",
@@ -544,7 +544,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"bandwidth":        "1000000 Kbit",
 			"bia_mac_address":  "80e0.1ded.6e92",
 			"crc":              "0",
@@ -581,7 +581,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{"abort": "",
+		{"abort": "",
 			"bandwidth":        "1000000 Kbit",
 			"bia_mac_address":  "80e0.1ded.6e9c",
 			"crc":              "0",
@@ -618,7 +618,7 @@ var (
 			"vlan_id":          "1",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "GigabitEthernet8.300",
 			"description":      "some description goes here",
 			"abort":            "",
@@ -656,7 +656,7 @@ var (
 			"vlan_id":          "300",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "Loopback0",
 			"description":      "",
 			"abort":            "0",
@@ -694,7 +694,7 @@ var (
 			"vlan_id":          "",
 			"vlan_id_inner":    "",
 			"vlan_id_outer":    ""},
-		map[string]interface{}{
+		{
 			"interface":        "Vlan1",
 			"description":      "another description goes here",
 			"abort":            "",

@@ -1,8 +1,8 @@
 package configfile
 
 import (
-	"testing"
 	"flag"
+	"testing"
 )
 
 func TestParseYaml(t *testing.T) {

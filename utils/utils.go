@@ -55,7 +55,7 @@ func WaitForPrompt(output *ThreadSafeBuffer, timeLimit time.Duration, erase bool
 			for _, c := range []string{"#", ">", "$"} {
 				if strings.Contains(ostr, c) {
 					if erase {
-						output.DiscardUntil(byte(c[0]))
+						output.DiscardUntil(c[0])
 					}
 					close(detectPrompt)
 					return

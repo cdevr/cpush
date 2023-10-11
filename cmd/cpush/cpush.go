@@ -49,7 +49,7 @@ var (
 	timeout         = flag.Duration("timeout", 10*time.Second, "timeout for the command")
 	concurrentLimit = flag.Int("limit", 25, "maximum number of simultaneous devices")
 
-	cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
+	usePwCache   = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 	clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
 
 	socks = flag.String("socks", "", "proxy to use")
@@ -257,7 +257,7 @@ Other flags are:`)
 	opts.Timeout = *timeout
 	opts.Dialer = dialer.Dial
 
-	password, err := pwcache.GetPassword(*cacheAllowed, *clearPwCache)
+	password, err := pwcache.GetPassword(*clearPwCache, *usePwCache)
 	if err != nil {
 		log.Fatalf("error getting password for user: %v", err)
 	}

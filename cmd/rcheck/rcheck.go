@@ -35,8 +35,8 @@ var (
 	suppressOutput   = flag.Bool("suppress_output", false, "don't print router output")
 	suppressProgress = flag.Bool("suppress_progress", false, "don't show progress indicator")
 
-	showDeviceName    = flag.Bool("devicename", true, "prefix output from routers with the device name")
-	logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
+	_ = flag.Bool("devicename", true, "prefix output from routers with the device name")
+	_ = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
 
 	version = flag.Bool("version", false, "print version and exit")
 
@@ -46,7 +46,7 @@ var (
 	timeout         = flag.Duration("timeout", 10*time.Second, "timeout for the command")
 	concurrentLimit = flag.Int("limit", 25, "maximum number of simultaneous devices")
 
-	cacheAllowed = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
+	usePwCache   = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 	clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
 
 	socks = flag.String("socks", "", "proxy to use")
@@ -211,7 +211,7 @@ func main() {
 	opts.Timeout = *timeout
 	opts.Dialer = dialer.Dial
 
-	password, err := pwcache.GetPassword(*cacheAllowed, *clearPwCache)
+	password, err := pwcache.GetPassword(*clearPwCache, *usePwCache)
 	if err != nil {
 		log.Fatalf("error getting password for user: %v", err)
 	}

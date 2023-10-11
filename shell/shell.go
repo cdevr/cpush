@@ -13,7 +13,7 @@ import (
 
 func respondInteractive(password string) func(user, instruction string, questions []string, echos []bool) ([]string, error) {
 	return func(user, instruction string, questions []string, echos []bool) ([]string, error) {
-		answers := []string{}
+		var answers []string
 		for range questions {
 			answers = append(answers, password)
 		}

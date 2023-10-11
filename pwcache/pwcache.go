@@ -12,12 +12,12 @@ import (
 )
 
 // GetPassword gets the password, or reads the cached password from /dev/shm.
-func GetPassword(cacheAllowed, clearCache bool) (string, error) {
-	user, err := user.Current()
+func GetPassword(clearCache bool, usePwCache bool) (string, error) {
+	userName, err := user.Current()
 	if err != nil {
-		return "", fmt.Errorf("Unable to get current username: %w", err)
+		return "", fmt.Errorf("unable to get current username: %w", err)
 	}
-	fn := fmt.Sprintf("/dev/shm/gpcache-%s", user.Username)
+	fn := fmt.Sprintf("/dev/shm/gpcache-%s", userName.Username)
 
 	if clearCache {
 		err := os.Remove(fn)
@@ -26,27 +26,32 @@ func GetPassword(cacheAllowed, clearCache bool) (string, error) {
 		}
 	}
 
-	cachedPw, err := os.ReadFile(fn)
-	if err == nil {
-		pw, err := base64.StdEncoding.DecodeString(string(cachedPw))
+	var cachedPw []byte
+	if usePwCache {
+		cachedPw, err := os.ReadFile(fn)
 		if err == nil {
-			return string(pw), nil
+			pw, err := base64.StdEncoding.DecodeString(string(cachedPw))
+			if err == nil {
+				return string(pw), nil
+			}
 		}
 	}
 
-	fmt.Print("Please enter the password to use: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Print("Please enter password: ")
+	bytePassword, err := term.ReadPassword(syscall.Stdin)
 	fmt.Println()
 	if err != nil {
 		return "", fmt.Errorf("failed to read password: %w", err)
 	}
 	password := string(bytePassword)
 
-	cachedPw = []byte(base64.StdEncoding.EncodeToString([]byte(password)))
-	err = os.WriteFile(fn, cachedPw, 0600)
-	if err != nil {
-		// Non-fatal error.
-		log.Printf("failed to cache password in %q: %v", fn, err)
+	if usePwCache {
+		cachedPw = []byte(base64.StdEncoding.EncodeToString([]byte(password)))
+		err = os.WriteFile(fn, cachedPw, 0600)
+		if err != nil {
+			// Non-fatal error.
+			log.Printf("failed to cache password in %q: %v", fn, err)
+		}
 	}
 
 	return password, nil
