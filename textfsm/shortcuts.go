@@ -53,7 +53,16 @@ func ParseTypedCiscoIosShowInterfaces(input string) ([]CiscoIosShowInterfacesRow
 
 const ExampleTemplate = "Value Heading ([^\\s].*)\nValue List Detail (.*)\n\nStart\n  ^${Heading} -> heading\n\nheading\n  ^\\s${Detail}\n  # If you find a new heading, don't yet read it into the \"heading\" field, first record it.\n  ^.* -> Continue.Record\n  ^${Heading}\n"
 
+func ParseExample(input string) ([]map[string]interface{}, error) {
+	return Parse(ExampleTemplate, input, true)
+}
+
 type ExampleRow struct {
 	Detail  []string
 	Heading string
+}
+
+func ParseTypedExample(input string) ([]ExampleRow, error) {
+	result, err := ParseIntoStruct([]ExampleRow{}, ExampleTemplate, input, true)
+	return result.([]ExampleRow), err
 }
