@@ -1,6 +1,7 @@
 package textfsm
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -886,5 +887,27 @@ func TestExampleStruct(t *testing.T) {
 	if diff := deep.Equal(data, want); diff != nil {
 		t.Error(diff)
 		t.Logf("%#v", data)
+	}
+}
+
+var showBgpSummaryResult = []CiscoIosShowBgpSummaryRow{
+	{LocalAs: "65550", ReceivedV4: "1", RemoteAs: "65551", RemoteIp: "192.0.2.77", RouterId: "192.0.2.70", Status: "", Uptime: "5w4d"},
+	{LocalAs: "65550", ReceivedV4: "10", RemoteAs: "65552", RemoteIp: "192.0.2.78", RouterId: "192.0.2.70", Status: "", Uptime: "5w4d"},
+}
+
+func TestShowBgpSum(t *testing.T) {
+	dataFn := "testdata/cisco_ios_show_bgp_summary"
+	data := ReadFile(dataFn, t)
+
+	got, err := ParseTypedCiscoIosShowBgpSummary(data)
+	if err != nil {
+		t.Errorf("textfsm failed to execute: %v", err)
+	}
+
+	want := showBgpSummaryResult
+
+	if diff := deep.Equal(got, want); diff != nil {
+		t.Error(diff)
+		log.Printf("got: %#v", got)
 	}
 }
