@@ -36,8 +36,5 @@ jobs:
         with:
           go-version: '1.18'
 
-      - name: Go to cpush command
-        run: cd cmd/cpush
-
-      - name: Install
-        run: go install
+      - name: Go to cmd/cpush and try to go install
+        run: cd cmd/cpush; go install
