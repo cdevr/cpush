@@ -40,4 +40,4 @@ jobs:
         run: cd cmd/cpush
 
       - name: Install
-        run: go install github.com/cdevr/cpush
+        run: go install
