@@ -36,5 +36,8 @@ jobs:
         with:
           go-version: '1.18'
 
+      - name: Go to cpush command
+        run: cd cmd/cpush
+
       - name: Install
         run: go install github.com/cdevr/cpush
