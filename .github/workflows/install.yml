@@ -21,4 +21,4 @@ jobs:
           go-version: '1.18'
 
       - name: Install
-        run: go install
+        run: go install .
