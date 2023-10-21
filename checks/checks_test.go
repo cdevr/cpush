@@ -40,7 +40,7 @@ Description: also good
 Description: bad because admin up line down
 `},
 			nil, // no error
-			[]CheckResult{{"CheckInterfaces.IntfStatus", dev, "GigabitEthernet0/1: admin \"up\" protocol \"down\""}},
+			[]CheckResult{{"CheckInterfaces", dev, "GigabitEthernet0/1: admin \"up\" protocol \"down\""}},
 		},
 		{
 			"wrong IntfStatus: Input errors",
@@ -50,7 +50,7 @@ Description: bad because input errors
       33 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored, 0 abort
 `},
 			nil, // no error
-			[]CheckResult{{"CheckInterfaces.IntfStatus", dev, "GigabitEthernet0/1: 33 input errors"}},
+			[]CheckResult{{"CheckInterfaces", dev, "GigabitEthernet0/1: 33 input errors"}},
 		},
 		{
 			"wrong IntfStatus: CRC errors",
@@ -60,7 +60,7 @@ Description: bad because input errors
      0 input errors, 92 CRC, 0 frame, 0 overrun, 0 ignored, 0 abort
 `},
 			nil, // no error
-			[]CheckResult{{"CheckInterfaces.IntfStatus", dev, "GigabitEthernet0/1: 92 CRC errors"}},
+			[]CheckResult{{"CheckInterfaces", dev, "GigabitEthernet0/1: 92 CRC errors"}},
 		},
 	}
 
