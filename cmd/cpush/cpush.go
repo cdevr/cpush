@@ -118,16 +118,18 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		defer wg.Done()
 	devices:
 		for device := range deviceChan {
+			var err error
+
 			for itry := 0; itry < *retries; itry += 1 {
 				output, err := doDevice(device)
-				if err != nil {
-					errors <- routerError{device, err}
-				} else {
+				if err == nil {
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
 				fmt.Fprintf(os.Stderr, "Retrying %q: %d/%d", device, itry, *retries)
 			}
+
+			errors <- routerError{device, err}
 		}
 	}
 
