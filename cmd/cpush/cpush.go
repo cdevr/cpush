@@ -25,6 +25,9 @@ import (
 
 //go:generate go run tagBuild.go
 
+// ANSI code to erase the current line and put the cursor at the beginning.
+const clearLine = "\033[2K\r"
+
 var (
 	device = flag.String("device", "", "a device to execute commands on")
 
@@ -126,7 +129,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
-				fmt.Fprintf(os.Stderr, "\033[2K\rRetrying %q: %d/%d\n", device, itry, *retries)
+				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry, *retries)
 			}
 
 			errors <- routerError{device, err}
@@ -157,16 +160,16 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		case <-started:
 			startCount += 1
 			if !*suppressProgress {
-				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprintf(os.Stderr, clearLine+"%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 			}
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
 			if !*suppressProgress {
-				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprintf(os.Stderr, clearLine+"%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 			}
 		case re := <-errors:
-			fmt.Fprintf(os.Stderr, "\rerror on %q: %v\n", re.router, re.err)
+			fmt.Fprintf(os.Stderr, clearLine+"error on %q: %v\n", re.router, re.err)
 		case output := <-outputs:
 			if *logOutputTemplate != "" {
 				fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
@@ -189,7 +192,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		case <-done:
 			allDone = true
 			if !*suppressProgress {
-				fmt.Fprintf(os.Stderr, "\033[2K\r%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprintf(os.Stderr, clearLine+"%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 		}
@@ -267,7 +270,20 @@ Other flags are:`)
 		return
 	}
 
-	if *device != "" {
+	if strings.Contains(*device, ",") {
+		devices := strings.Split(*device, ",")
+
+		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
+	} else if strings.HasPrefix(*device, "file:") {
+		deviceFn := (*device)[5:]
+		fileLines, err := os.ReadFile(deviceFn)
+		if err != nil {
+			log.Fatalf("failed to read device file %q: %v", deviceFn, err)
+		}
+		devices := strings.Split(string(fileLines), "\n")
+
+		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
+	} else if *device != "" {
 		if *interactive {
 			err = shell.Interactive(opts, *device, *username, password)
 			if err != nil {
@@ -308,19 +324,6 @@ Other flags are:`)
 		if !*suppressOutput {
 			fmt.Printf("%s\n", output)
 		}
-	} else if strings.Contains(*device, ",") {
-		devices := strings.Split(*device, ",")
-
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
-	} else if strings.HasPrefix(*device, "file:") {
-		deviceFn := (*device)[5:]
-		fileLines, err := os.ReadFile(deviceFn)
-		if err != nil {
-			log.Fatalf("failed to read device file %q: %v", deviceFn, err)
-		}
-		devices := strings.Split(string(fileLines), "\n")
-
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
 	}
 	os.Exit(0)
 }
