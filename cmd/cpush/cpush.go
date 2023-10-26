@@ -160,20 +160,24 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		done <- true
 	}()
 
+	progressLine := func() string {
+		remaining := len(devices) - startCount - endedCount
+		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%%", remaining, startCount, endedCount, len(devices), 100.0*float64(endedCount)/float64(len(devices)))
+	}
+
 	allDone := false
 	for !allDone {
-		remaining := len(devices) - startCount - endedCount
 		select {
 		case <-started:
 			startCount += 1
 			if !*suppressProgress {
-				fmt.Fprintf(os.Stderr, clearLine+"%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprint(os.Stderr, progressLine())
 			}
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
 			if !*suppressProgress {
-				fmt.Fprintf(os.Stderr, clearLine+"%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprint(os.Stderr, progressLine())
 			}
 		case re := <-errors:
 			fmt.Fprintf(os.Stderr, clearLine+"error on %q: %v\n", re.router, re.err)
@@ -199,7 +203,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		case <-done:
 			allDone = true
 			if !*suppressProgress {
-				fmt.Fprintf(os.Stderr, clearLine+"%d/%d/%d/%d", remaining, startCount, endedCount, len(devices))
+				fmt.Fprint(os.Stderr, progressLine())
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 		}
