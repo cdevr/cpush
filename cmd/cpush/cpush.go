@@ -105,7 +105,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		var err error
 		done := make(chan bool)
 		go func() {
-			output, err = cisco.Cmd(opts, device, username, password, cmd)
+			output, err = cisco.Cmd(opts, device, username, password, cmd, *timeout)
 			done <- true
 		}()
 
@@ -293,7 +293,7 @@ Other flags are:`)
 		}
 		var output string
 		if *command != "" {
-			output, err = cisco.Cmd(opts, *device, *username, password, *command)
+			output, err = cisco.Cmd(opts, *device, *username, password, *command, *timeout)
 			if err != nil {
 				log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
 			}

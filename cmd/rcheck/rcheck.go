@@ -4,8 +4,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/cdevr/cpush/checks"
-	"github.com/cdevr/cpush/options"
 	"io"
 	"log"
 	"os"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cdevr/cpush/checks"
+	"github.com/cdevr/cpush/options"
 
 	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/configfile"
@@ -91,7 +92,7 @@ func CheckRouters(opts *options.Options, concurrentLimit int, devices []string, 
 		cmdResults := map[string]string{}
 
 		for _, cmd := range checkCommands {
-			output, err := cisco.Cmd(opts, device, username, password, cmd)
+			output, err := cisco.Cmd(opts, device, username, password, cmd, opts.Timeout)
 			if err != nil {
 				return nil, err
 			}

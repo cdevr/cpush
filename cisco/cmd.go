@@ -171,7 +171,14 @@ func Push(opts *options.Options, device string, username string, password string
 }
 
 // Cmd executes a command on a device and returns the output.
-func Cmd(opts *options.Options, device string, username string, password string, cmd string) (string, error) {
+func Cmd(opts *options.Options, device string, username string, password string, cmd string, timeout time.Duration) (string, error) {
+	// Sets the time when the timeout has elapsed.
+	var whenToQuit = time.Now().Add(timeout)
+
+	// if time.Now().After(whenToQuit) {
+	// 	return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
+	// }
+
 	var result bytes.Buffer
 
 	config := &ssh.ClientConfig{
@@ -192,6 +199,12 @@ func Cmd(opts *options.Options, device string, username string, password string,
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
+	defer tcpConn.Close()
+
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
+	}
+
 	sshConn, chans, reqs, err := ssh.NewClientConn(tcpConn, addr, config)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
@@ -199,11 +212,19 @@ func Cmd(opts *options.Options, device string, username string, password string,
 	conn := ssh.NewClient(sshConn, chans, reqs)
 	defer conn.Close()
 
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
+	}
+
 	session, err := conn.NewSession()
 	if err != nil {
 		return "", fmt.Errorf("failed to get session on device %q: %v", device, err)
 	}
 	defer session.Close()
+
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
+	}
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO: 0,
@@ -211,6 +232,10 @@ func Cmd(opts *options.Options, device string, username string, password string,
 
 	if err := session.RequestPty("xterm", 50, 80, modes); err != nil {
 		return "", fmt.Errorf("failed to get pty on device %q: %v", device, err)
+	}
+
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
 	}
 
 	stdinBuf, err := session.StdinPipe()
@@ -227,6 +252,10 @@ func Cmd(opts *options.Options, device string, username string, password string,
 
 	utils.WaitForPrompt(&output, 2*time.Second, opts.SuppressBanner)
 
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
+	}
+
 	if !opts.SuppressSending {
 		fmt.Fprintf(&result, "sending %q", noMore)
 	}
@@ -236,6 +265,10 @@ func Cmd(opts *options.Options, device string, username string, password string,
 	if opts.SuppressAdmin {
 		utils.WaitForPrompt(&output, 2*time.Second, false)
 		output.Reset()
+	}
+
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
 	}
 
 	if !opts.SuppressSending {
@@ -253,6 +286,10 @@ func Cmd(opts *options.Options, device string, username string, password string,
 	}
 	time.Sleep(200 * time.Millisecond)
 
+	if time.Now().After(whenToQuit) {
+		return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
+	}
+
 	if !opts.SuppressSending {
 		fmt.Fprintf(&result, "sending %q", exitCommand)
 	}
@@ -268,9 +305,11 @@ func Cmd(opts *options.Options, device string, username string, password string,
 		close(done)
 	}()
 
+	remainingTime := whenToQuit.Sub(time.Now())
 	select {
 	case <-done:
-	case <-time.After(opts.Timeout):
+		// Determine the
+	case <-time.After(remainingTime):
 		return "", fmt.Errorf("timeout of %v hit", opts.Timeout)
 	}
 	return RemovePromptSuffix(result.String()), nil
