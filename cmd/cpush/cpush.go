@@ -130,7 +130,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
-				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry, *retries)
+				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry+1, *retries)
 			}
 
 			errors <- routerError{device, err}
