@@ -58,10 +58,8 @@ func GetUser() string {
 	if err != nil {
 		log.Fatalf("Cannot get current user")
 	}
-	username := cur.Username
-	if strings.HasPrefix(username, "adm1-") {
-		username = username[5:]
-	}
+
+	username := strings.TrimPrefix(cur.Username, "adm1-")
 	return username
 }
 
