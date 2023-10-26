@@ -85,6 +85,7 @@ type routerError struct {
 
 // CmdDevices executes a command on many devices, prints the output.
 func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, username string, password string, cmd string, shuffle bool) {
+	var startTime = time.Now()
 	var wg sync.WaitGroup
 
 	deviceChan := make(chan string)
@@ -162,7 +163,22 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 
 	progressLine := func() string {
 		remaining := len(devices) - startCount - endedCount
-		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%%", remaining, startCount, endedCount, len(devices), 100.0*float64(endedCount)/float64(len(devices)))
+		progress := float64(endedCount) / float64(len(devices))
+
+		timeElapsed := time.Now().Sub(startTime).Round(time.Second)
+		expectedDuration := time.Duration(float64(timeElapsed) / progress).Round(time.Second)
+
+		expectedFinish := time.Now().Add(expectedDuration).Round(time.Second)
+
+		expectedDurationStr := fmt.Sprintf("%s", expectedDuration)
+		expectedFinishStr := fmt.Sprintf("%s", expectedFinish)
+		if timeElapsed < 2*time.Second || endedCount < 1 {
+			timeElapsed = 0
+			expectedDurationStr = "..."
+			expectedFinishStr = "..."
+		}
+
+		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
 	}
 
 	allDone := false
