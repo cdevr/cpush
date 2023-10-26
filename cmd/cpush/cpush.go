@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/user"
 	"runtime"
@@ -55,6 +56,8 @@ var (
 	usePwCache   = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
 	clearPwCache = flag.Bool("pw_clear_cache", false, "forcibly clear the pw cache")
 
+	shuffle = flag.Bool("shuffle", false, "if true, and doing multiple devices, randomize the order")
+
 	socks = flag.String("socks", "", "proxy to use")
 )
 
@@ -81,7 +84,7 @@ type routerError struct {
 }
 
 // CmdDevices executes a command on many devices, prints the output.
-func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, username string, password string, cmd string) {
+func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, username string, password string, cmd string, shuffle bool) {
 	var wg sync.WaitGroup
 
 	deviceChan := make(chan string)
@@ -143,6 +146,9 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	}
 
 	go func() {
+		if shuffle {
+			rand.Shuffle(len(devices), func(i, j int) { devices[i], devices[j] = devices[j], devices[i] })
+		}
 		for _, d := range devices {
 			deviceChan <- d
 		}
@@ -213,6 +219,8 @@ func filterEmptyDevices(devices []string) []string {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
 
@@ -274,7 +282,7 @@ Other flags are:`)
 	if strings.Contains(*device, ",") {
 		devices := strings.Split(*device, ",")
 
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
+		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
 	} else if strings.HasPrefix(*device, "file:") {
 		deviceFn := (*device)[5:]
 		fileLines, err := os.ReadFile(deviceFn)
@@ -283,7 +291,7 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command)
+		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
 	} else if *device != "" {
 		if *interactive {
 			err = shell.Interactive(opts, *device, *username, password)
