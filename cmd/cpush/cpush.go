@@ -124,7 +124,8 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			var err error
 
 			for itry := 0; itry < *retries; itry += 1 {
-				output, err := doDevice(device)
+				var output string
+				output, err = doDevice(device)
 				if err == nil {
 					outputs <- routerOutput{device, output}
 					continue devices
