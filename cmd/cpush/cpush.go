@@ -42,8 +42,10 @@ var (
 	suppressOutput   = flag.Bool("suppress_output", false, "don't print router output")
 	suppressProgress = flag.Bool("suppress_progress", false, "don't show progress indicator")
 
-	showDeviceName    = flag.Bool("devicename", true, "prefix output from routers with the device name")
-	logOutputTemplate = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
+	showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
+
+	outputFile            = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
+	skip_if_output_exists = flag.Bool("skip_if_output_exists", true, "skip the device if the output file already exists")
 
 	version = flag.Bool("version", false, "print version and exit")
 
@@ -83,6 +85,17 @@ type routerError struct {
 	err    error
 }
 
+// FileExists returns true if a file with the given name exists.
+func FileExists(fn string) bool {
+	_, err := os.Stat(fn)
+	return err == nil
+}
+
+// FillOutputFilenameTemplate fills in the router name in the filename template.
+func FillOutputFilenameTemplate(fn string, router string) string {
+	return strings.ReplaceAll(fn, "%s", router)
+}
+
 // CmdDevices executes a command on many devices, prints the output.
 func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, username string, password string, cmd string, shuffle bool) {
 	var startTime = time.Now()
@@ -99,6 +112,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	ended := make(chan bool)
 
 	startCount := 0
+	skippedCount := 0
 	endedCount := 0
 
 	doDevice := func(device string) (string, error) {
@@ -137,7 +151,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry+1, *retries)
 			}
 
-			errors <- routerError{device, err}
+			errors <- routerError{device, fmt.Errorf("failed in %d tries, last error: %v", *retries, err)}
 		}
 	}
 
@@ -150,7 +164,20 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		if shuffle {
 			rand.Shuffle(len(devices), func(i, j int) { devices[i], devices[j] = devices[j], devices[i] })
 		}
+		// First skip all the ones we're going to skip.
+		dontSkip := []string{}
 		for _, d := range devices {
+			// Skip this device if the output file already exists.
+			if *outputFile != "" && FileExists(FillOutputFilenameTemplate(*outputFile, d)) {
+				log.Printf("skipping %q: %q already exists", d, FillOutputFilenameTemplate(*outputFile, d))
+				skippedCount += 1
+				continue
+			}
+			dontSkip = append(dontSkip, d)
+		}
+
+		// Then execute the remainder.
+		for _, d := range dontSkip {
 			deviceChan <- d
 		}
 		close(deviceChan)
@@ -162,8 +189,8 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	}()
 
 	progressLine := func() string {
-		remaining := len(devices) - startCount - endedCount
-		progress := float64(endedCount) / float64(len(devices))
+		remaining := len(devices) - startCount - endedCount - skippedCount
+		progress := float64(endedCount) / float64(len(devices)-skippedCount)
 
 		timeElapsed := time.Now().Sub(startTime).Round(time.Second)
 		expectedDuration := time.Duration(float64(timeElapsed) / progress).Round(time.Second)
@@ -197,20 +224,20 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			}
 		case re := <-errors:
 			fmt.Fprintf(os.Stderr, clearLine+"error on %q: %v\n", re.router, re.err)
-		case output := <-outputs:
-			if *logOutputTemplate != "" {
-				fn := strings.ReplaceAll(*logOutputTemplate, "%s", output.router)
-				err := utils.ReplaceFile(fn, utils.Dos2Unix(output.output))
+		case rtrOutput := <-outputs:
+			if *outputFile != "" {
+				fn := FillOutputFilenameTemplate(*outputFile, rtrOutput.router)
+				err := utils.ReplaceFile(fn, utils.Dos2Unix(rtrOutput.output))
 				if err != nil {
-					log.Printf("failed to save output for router %q: %v", output.router, err)
+					log.Printf("failed to save output for router %q: %v", rtrOutput.router, err)
 				}
 			}
 
-			lines := strings.Split(output.output, "\n")
+			lines := strings.Split(rtrOutput.output, "\n")
 			for _, line := range lines {
 				if !*suppressOutput {
 					if *showDeviceName {
-						fmt.Printf("%s: %s\n", output.router, line)
+						fmt.Printf("%s: %s\n", rtrOutput.router, line)
 					} else {
 						fmt.Printf("%s\n", line)
 					}
@@ -343,8 +370,8 @@ Other flags are:`)
 				log.Fatalf("failed to commit configlet %q on device %q: %v", topush, *device, err)
 			}
 		}
-		if *logOutputTemplate != "" {
-			fn := strings.ReplaceAll(*logOutputTemplate, "%s", *device)
+		if *outputFile != "" {
+			fn := strings.ReplaceAll(*outputFile, "%s", *device)
 			err := utils.AppendToFile(fn, utils.Dos2Unix(output))
 			if err != nil {
 				log.Printf("failed to save output for router %q: %v", *device, err)
