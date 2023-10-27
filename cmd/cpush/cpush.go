@@ -168,10 +168,12 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		dontSkip := []string{}
 		for _, d := range devices {
 			// Skip this device if the output file already exists.
-			if *outputFile != "" && FileExists(FillOutputFilenameTemplate(*outputFile, d)) {
-				log.Printf("skipping %q: %q already exists", d, FillOutputFilenameTemplate(*outputFile, d))
-				skippedCount += 1
-				continue
+			if *skip_if_output_exists {
+				if *outputFile != "" && FileExists(FillOutputFilenameTemplate(*outputFile, d)) {
+					log.Printf("skipping %q: %q already exists", d, FillOutputFilenameTemplate(*outputFile, d))
+					skippedCount += 1
+					continue
+				}
 			}
 			dontSkip = append(dontSkip, d)
 		}
