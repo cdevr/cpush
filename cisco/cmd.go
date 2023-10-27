@@ -63,6 +63,7 @@ func Push(opts *options.Options, device string, username string, password string
 			ssh.KeyboardInteractive(respondInteractive(password)),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Config:          sshConfig(),
 	}
 
 	addr := device
@@ -170,6 +171,18 @@ func Push(opts *options.Options, device string, username string, password string
 	return output.String(), nil
 }
 
+// sshConfig returns additional ssh configuration options for cisco routers, such as allowing bad ciphers used by Cisco.
+func sshConfig() ssh.Config {
+	extraCiphers := []string{"aes128-cbc", "3des-cbc", "aes192-cbc", "aes256-cbc"}
+
+	config := ssh.Config{}
+	config.SetDefaults()
+
+	config.Ciphers = append(config.Ciphers, extraCiphers...)
+
+	return config
+}
+
 // Cmd executes a command on a device and returns the output.
 func Cmd(opts *options.Options, device string, username string, password string, cmd string, timeout time.Duration) (string, error) {
 	// Sets the time when the timeout has elapsed.
@@ -188,6 +201,7 @@ func Cmd(opts *options.Options, device string, username string, password string,
 			ssh.KeyboardInteractive(respondInteractive(password)),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Config:          sshConfig(),
 	}
 
 	addr := device

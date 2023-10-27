@@ -2,10 +2,11 @@ package shell
 
 import (
 	"fmt"
-	"github.com/cdevr/cpush/options"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/cdevr/cpush/options"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -21,6 +22,18 @@ func respondInteractive(password string) func(user, instruction string, question
 	}
 }
 
+// sshConfig returns additional ssh configuration options for cisco routers, such as allowing bad ciphers used by Cisco.
+func sshConfig() ssh.Config {
+	extraCiphers := []string{"aes128-cbc", "3des-cbc", "aes192-cbc", "aes256-cbc"}
+
+	config := ssh.Config{}
+	config.SetDefaults()
+
+	config.Ciphers = append(config.Ciphers, extraCiphers...)
+
+	return config
+}
+
 // Interactive starts a remote shell and connects it to the terminal.
 func Interactive(opts *options.Options, device string, username string, password string) error {
 	log.Printf("starting interactive shell")
@@ -31,6 +44,7 @@ func Interactive(opts *options.Options, device string, username string, password
 			ssh.KeyboardInteractive(respondInteractive(password)),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Config:          sshConfig(),
 	}
 
 	addr := device
