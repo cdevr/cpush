@@ -33,7 +33,7 @@ List a bunch of devices in a file called "devices_shver". For example router1 an
     # cat devices_shver
     router1
     router2
-    # cpush --devicefile devices_shver --cmd "show version" --output "shver_%s"
+    # cpush --device file:devices_shver --cmd "show version" --output "shver_%s"
     # ls
     devices_shver
     shver_router1
