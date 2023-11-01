@@ -115,6 +115,9 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	skippedCount := 0
 	endedCount := 0
 
+	succeeded := map[string]bool{}
+	failed := map[string]bool{}
+
 	doDevice := func(device string) (string, error) {
 		started <- true
 		defer func() { ended <- true }()
@@ -225,8 +228,10 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 				fmt.Fprint(os.Stderr, progressLine())
 			}
 		case re := <-errors:
+			failed[re.router] = true
 			fmt.Fprintf(os.Stderr, clearLine+"error on %q: %v\n", re.router, re.err)
 		case rtrOutput := <-outputs:
+			succeeded[rtrOutput.router] = true
 			if *outputFile != "" {
 				fn := FillOutputFilenameTemplate(*outputFile, rtrOutput.router)
 				err := utils.ReplaceFile(fn, utils.Dos2Unix(rtrOutput.output))
@@ -253,6 +258,196 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			}
 		}
 	}
+
+	// Print summary
+	fmt.Printf("\nSucceeded\n\n")
+	for rtr, _ := range succeeded {
+		fmt.Printf("%s\n", rtr)
+	}
+	fmt.Printf("\n")
+
+	fmt.Printf("Failed\n\n")
+	for rtr, _ := range failed {
+		fmt.Printf("%s\n", rtr)
+	}
+	fmt.Printf("\n")
+}
+
+// PushDevices executes a command on many devices, prints the output.
+func PushDevices(opts *options.Options, concurrentLimit int, devices []string, username string, password string, cmd string, shuffle bool) {
+	var startTime = time.Now()
+	var wg sync.WaitGroup
+
+	deviceChan := make(chan string)
+
+	outputs := make(chan routerOutput)
+	errors := make(chan routerError)
+
+	done := make(chan bool)
+
+	started := make(chan bool)
+	ended := make(chan bool)
+
+	startCount := 0
+	skippedCount := 0
+	endedCount := 0
+
+	succeeded := map[string]bool{}
+	failed := map[string]bool{}
+
+	doDevice := func(device string) (string, error) {
+		started <- true
+		defer func() { ended <- true }()
+
+		var output string
+		var err error
+		done := make(chan bool)
+		go func() {
+			output, err = cisco.Push(opts, device, username, password, cmd)
+			done <- true
+		}()
+
+		select {
+		case <-done:
+			return output, err
+		case <-time.After(*timeout):
+			return "", fmt.Errorf("router %q hit timeout after %v", device, *timeout)
+		}
+	}
+
+	worker := func() {
+		defer wg.Done()
+	devices:
+		for device := range deviceChan {
+			var err error
+
+			for itry := 0; itry < *retries; itry += 1 {
+				var output string
+				output, err = doDevice(device)
+				if err == nil {
+					outputs <- routerOutput{device, output}
+					continue devices
+				}
+				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry+1, *retries)
+			}
+
+			errors <- routerError{device, fmt.Errorf("failed in %d tries, last error: %v", *retries, err)}
+		}
+	}
+
+	for i := 0; i < concurrentLimit; i++ {
+		wg.Add(1)
+		go worker()
+	}
+
+	go func() {
+		if shuffle {
+			rand.Shuffle(len(devices), func(i, j int) { devices[i], devices[j] = devices[j], devices[i] })
+		}
+		// First skip all the ones we're going to skip.
+		dontSkip := []string{}
+		for _, d := range devices {
+			// Skip this device if the output file already exists.
+			if *skip_if_output_exists {
+				if *outputFile != "" && FileExists(FillOutputFilenameTemplate(*outputFile, d)) {
+					log.Printf("skipping %q: %q already exists", d, FillOutputFilenameTemplate(*outputFile, d))
+					skippedCount += 1
+					continue
+				}
+			}
+			dontSkip = append(dontSkip, d)
+		}
+
+		// Then execute the remainder.
+		for _, d := range dontSkip {
+			deviceChan <- d
+		}
+		close(deviceChan)
+	}()
+
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+
+	progressLine := func() string {
+		remaining := len(devices) - startCount - endedCount - skippedCount
+		progress := float64(endedCount) / float64(len(devices)-skippedCount)
+
+		timeElapsed := time.Now().Sub(startTime).Round(time.Second)
+		expectedDuration := time.Duration(float64(timeElapsed) / progress).Round(time.Second)
+
+		expectedFinish := time.Now().Add(expectedDuration).Round(time.Second)
+
+		expectedDurationStr := fmt.Sprintf("%s", expectedDuration)
+		expectedFinishStr := fmt.Sprintf("%s", expectedFinish)
+		if timeElapsed < 2*time.Second || endedCount < 1 {
+			timeElapsed = 0
+			expectedDurationStr = "..."
+			expectedFinishStr = "..."
+		}
+
+		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
+	}
+
+	allDone := false
+	for !allDone {
+		select {
+		case <-started:
+			startCount += 1
+			if !*suppressProgress {
+				fmt.Fprint(os.Stderr, progressLine())
+			}
+		case <-ended:
+			startCount -= 1
+			endedCount += 1
+			if !*suppressProgress {
+				fmt.Fprint(os.Stderr, progressLine())
+			}
+		case re := <-errors:
+			failed[re.router] = true
+			fmt.Fprintf(os.Stderr, clearLine+"error on %q: %v\n", re.router, re.err)
+		case rtrOutput := <-outputs:
+			succeeded[rtrOutput.router] = true
+			if *outputFile != "" {
+				fn := FillOutputFilenameTemplate(*outputFile, rtrOutput.router)
+				err := utils.ReplaceFile(fn, utils.Dos2Unix(rtrOutput.output))
+				if err != nil {
+					log.Printf("failed to save output for router %q: %v", rtrOutput.router, err)
+				}
+			}
+
+			lines := strings.Split(rtrOutput.output, "\n")
+			for _, line := range lines {
+				if !*suppressOutput {
+					if *showDeviceName {
+						fmt.Printf("%s: %s\n", rtrOutput.router, line)
+					} else {
+						fmt.Printf("%s\n", line)
+					}
+				}
+			}
+		case <-done:
+			allDone = true
+			if !*suppressProgress {
+				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprintf(os.Stderr, "\n")
+			}
+		}
+	}
+
+	// Print summary
+	fmt.Printf("\nSucceeded\n\n")
+	for rtr, _ := range succeeded {
+		fmt.Printf("%s\n", rtr)
+	}
+	fmt.Printf("\n")
+
+	fmt.Printf("Failed\n\n")
+	for rtr, _ := range failed {
+		fmt.Printf("%s\n", rtr)
+	}
+	fmt.Printf("\n")
 }
 
 // filterEmptyDevices trims spaces and removes empty string from a list of strings.
@@ -328,10 +523,28 @@ Other flags are:`)
 		return
 	}
 
+	topush := ""
+	if *push != "" {
+		topush = *push
+		if fn := strings.TrimPrefix(topush, "file:"); fn != topush {
+			topushBytes, err := os.ReadFile(fn)
+			if err != nil {
+				log.Fatalf("failed to read push lines from %q: %v", fn, err)
+			}
+			topush = string(topushBytes)
+		}
+	}
+
 	if strings.Contains(*device, ",") {
 		devices := strings.Split(*device, ",")
 
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
+		if *command != "" {
+			CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
+		} else if topush != "" {
+			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
+		} else {
+			fmt.Errorf("Nothing to do!")
+		}
 	} else if strings.HasPrefix(*device, "file:") {
 		deviceFn := (*device)[5:]
 		fileLines, err := os.ReadFile(deviceFn)
@@ -340,7 +553,13 @@ Other flags are:`)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
-		CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
+		if *command != "" {
+			CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
+		} else if topush != "" {
+			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
+		} else {
+			fmt.Errorf("Nothing to do!")
+		}
 	} else if *device != "" {
 		if *interactive {
 			err = shell.Interactive(opts, *device, *username, password)
@@ -355,23 +574,15 @@ Other flags are:`)
 			if err != nil {
 				log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
 			}
-		}
-		if *push != "" {
-			topush := *push
-			if strings.HasPrefix(topush, "file:") {
-				fn := topush[5:]
-				topushBytes, err := os.ReadFile(fn)
-				if err != nil {
-					log.Fatalf("failed to read push lines from %q: %v", fn, err)
-				}
-				topush = string(topushBytes)
-			}
-			log.Printf("pushing to %q: %q", *device, topush)
+		} else if topush != "" {
 			output, err = cisco.Push(opts, *device, *username, password, topush)
 			if err != nil {
-				log.Fatalf("failed to commit configlet %q on device %q: %v", topush, *device, err)
+				log.Fatalf("failed to push configlet %q on device %q: %v", topush, *device, err)
 			}
+		} else {
+			fmt.Errorf("Nothing to do!")
 		}
+
 		if *outputFile != "" {
 			fn := strings.ReplaceAll(*outputFile, "%s", *device)
 			err := utils.AppendToFile(fn, utils.Dos2Unix(output))
@@ -379,11 +590,11 @@ Other flags are:`)
 				log.Printf("failed to save output for router %q: %v", *device, err)
 			}
 		}
+
 		if !*suppressOutput {
 			fmt.Printf("%s\n", output)
 		}
 	}
-	os.Exit(0)
 }
 
 func MakeDialer(proxyAddress string) proxy.Dialer {
