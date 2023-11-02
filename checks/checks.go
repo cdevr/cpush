@@ -2,8 +2,9 @@ package checks
 
 import (
 	"fmt"
-	"github.com/cdevr/cpush/textfsm"
 	"strconv"
+
+	"github.com/cdevr/cpush/textfsm"
 )
 
 type CheckResult struct {
@@ -29,6 +30,12 @@ var Checks = []CheckData{
 		[]string{"show bgp sum"},
 		CheckBgpSum,
 	},
+	// TODO:
+	// Check bootvar is set to 0x2102
+	// Check BFD
+	// Check interface transceiver
+	// Check license all
+	// Check standby HSRP
 }
 
 func GetCheckCommands() []string {
