@@ -1,0 +1,6 @@
+IPv4 Sessions
+NeighAddr                              LD/RD         RH/RS     State     Int
+10.01.134.2                             1/5          Up        Up        Gi0/0/0
+10.11.194.69                            2/6          Up        Up        Gi0/0/1
+10.121.64.122                           4/65628      Up        Up        Gi0/0/2.55
+10.121.17.26                            3/196682     Up        Up        Gi0/0/2.66
