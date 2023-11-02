@@ -52,7 +52,7 @@ var (
 	username = flag.String("username", "", "username to use for login")
 
 	retries         = flag.Int("retries", 3, "retries (per device)")
-	timeout         = flag.Duration("timeout", 10*time.Second, "timeout for the command")
+	timeout         = flag.Duration("timeout", 30*time.Second, "timeout for the command")
 	concurrentLimit = flag.Int("limit", 25, "maximum number of simultaneous devices")
 
 	usePwCache   = flag.Bool("pw_cache_allowed", true, "allowed to cache password in /dev/shm")
