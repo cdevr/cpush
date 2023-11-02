@@ -264,11 +264,17 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	for rtr, _ := range succeeded {
 		fmt.Printf("%s\n", rtr)
 	}
+	if len(failed) == 0 {
+		fmt.Printf("(None)")
+	}
 	fmt.Printf("\n")
 
 	fmt.Printf("Failed\n\n")
 	for rtr, _ := range failed {
 		fmt.Printf("%s\n", rtr)
+	}
+	if len(failed) == 0 {
+		fmt.Printf("(None)")
 	}
 	fmt.Printf("\n")
 }
@@ -441,11 +447,17 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 	for rtr, _ := range succeeded {
 		fmt.Printf("%s\n", rtr)
 	}
+	if len(failed) == 0 {
+		fmt.Printf("(None)")
+	}
 	fmt.Printf("\n")
 
 	fmt.Printf("Failed\n\n")
 	for rtr, _ := range failed {
 		fmt.Printf("%s\n", rtr)
+	}
+	if len(failed) == 0 {
+		fmt.Printf("(None)")
 	}
 	fmt.Printf("\n")
 }
