@@ -44,8 +44,8 @@ var (
 
 	showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
 
-	outputFile            = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
-	skip_if_output_exists = flag.Bool("skip_if_output_exists", true, "skip the device if the output file already exists")
+	outputFile         = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
+	skipIfOutputExists = flag.Bool("skip_if_output_exists", true, "skip the device if the output file already exists")
 
 	version = flag.Bool("version", false, "print version and exit")
 
@@ -171,7 +171,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		dontSkip := []string{}
 		for _, d := range devices {
 			// Skip this device if the output file already exists.
-			if *skip_if_output_exists {
+			if *skipIfOutputExists {
 				if *outputFile != "" && FileExists(FillOutputFilenameTemplate(*outputFile, d)) {
 					log.Printf("skipping %q: %q already exists", d, FillOutputFilenameTemplate(*outputFile, d))
 					skippedCount += 1
@@ -354,7 +354,7 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 		dontSkip := []string{}
 		for _, d := range devices {
 			// Skip this device if the output file already exists.
-			if *skip_if_output_exists {
+			if *skipIfOutputExists {
 				if *outputFile != "" && FileExists(FillOutputFilenameTemplate(*outputFile, d)) {
 					log.Printf("skipping %q: %q already exists", d, FillOutputFilenameTemplate(*outputFile, d))
 					skippedCount += 1
@@ -555,7 +555,7 @@ Other flags are:`)
 		} else if topush != "" {
 			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
 		} else {
-			fmt.Errorf("Nothing to do!")
+			fmt.Errorf("nothing to do")
 		}
 	} else if strings.HasPrefix(*device, "file:") {
 		deviceFn := (*device)[5:]
@@ -570,7 +570,7 @@ Other flags are:`)
 		} else if topush != "" {
 			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
 		} else {
-			fmt.Errorf("Nothing to do!")
+			fmt.Errorf("nothing to do")
 		}
 	} else if *device != "" {
 		if *interactive {
@@ -592,7 +592,7 @@ Other flags are:`)
 				log.Fatalf("failed to push configlet %q on device %q: %v", topush, *device, err)
 			}
 		} else {
-			fmt.Errorf("Nothing to do!")
+			fmt.Errorf("nothing to do")
 		}
 
 		if *outputFile != "" {

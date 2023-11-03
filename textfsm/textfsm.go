@@ -305,7 +305,7 @@ func (fsm *TextFSM) parseFSMVariables(scanner *bufio.Scanner) error {
 }
 
 // parseFSMStates extracts "State" and associated Rules from body of template file.
-// After the "Value" definitions the remainder of the template is
+// After the "Value" definitions the remainder of the template come
 // state definitions. The routine is expected to be called iteratively
 // until no more states remain - indicated by returning None.
 // The routine checks that the state names are a well-formed string, do
