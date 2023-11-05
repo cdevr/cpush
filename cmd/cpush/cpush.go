@@ -44,7 +44,7 @@ var (
 
 	showDeviceName = flag.Bool("devicename", true, "prefix output from routers with the device name")
 
-	outputFile         = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name")
+	outputFile         = flag.String("output", "", "template for files to save the output in. %s gets replaced with the device name. When specified output is not printed")
 	skipIfOutputExists = flag.Bool("skip_if_output_exists", true, "skip the device if the output file already exists")
 
 	version = flag.Bool("version", false, "print version and exit")
@@ -474,11 +474,26 @@ func filterEmptyDevices(devices []string) []string {
 	return filteredDevices
 }
 
+func isFlagPresent(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
+
+	// Set suppress_output flag if output flag was passed, unless overriden.
+	if !isFlagPresent("suppress_output") && isFlagPresent("output") {
+		*suppressOutput = true
+	}
 
 	if *version {
 		fmt.Printf("cpush git revision %s compiled at %s with Go %s\n", buildGitRevision, buildTime, runtime.Version())
