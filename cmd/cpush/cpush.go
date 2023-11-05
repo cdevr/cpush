@@ -168,7 +168,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			rand.Shuffle(len(devices), func(i, j int) { devices[i], devices[j] = devices[j], devices[i] })
 		}
 		// First skip all the ones we're going to skip.
-		dontSkip := []string{}
+		var dontSkip []string
 		for _, d := range devices {
 			// Skip this device if the output file already exists.
 			if *skipIfOutputExists {
@@ -261,7 +261,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 
 	// Print summary
 	fmt.Printf("\nSucceeded\n\n")
-	for rtr, _ := range succeeded {
+	for rtr := range succeeded {
 		fmt.Printf("%s\n", rtr)
 	}
 	if len(failed) == 0 {
@@ -270,7 +270,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	fmt.Printf("\n")
 
 	fmt.Printf("Failed\n\n")
-	for rtr, _ := range failed {
+	for rtr := range failed {
 		fmt.Printf("%s\n", rtr)
 	}
 	if len(failed) == 0 {
@@ -351,7 +351,7 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 			rand.Shuffle(len(devices), func(i, j int) { devices[i], devices[j] = devices[j], devices[i] })
 		}
 		// First skip all the ones we're going to skip.
-		dontSkip := []string{}
+		var dontSkip []string
 		for _, d := range devices {
 			// Skip this device if the output file already exists.
 			if *skipIfOutputExists {
@@ -444,7 +444,7 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 
 	// Print summary
 	fmt.Printf("\nSucceeded\n\n")
-	for rtr, _ := range succeeded {
+	for rtr := range succeeded {
 		fmt.Printf("%s\n", rtr)
 	}
 	if len(failed) == 0 {
@@ -453,7 +453,7 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 	fmt.Printf("\n")
 
 	fmt.Printf("Failed\n\n")
-	for rtr, _ := range failed {
+	for rtr := range failed {
 		fmt.Printf("%s\n", rtr)
 	}
 	if len(failed) == 0 {
