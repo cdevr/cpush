@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -259,24 +260,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		}
 	}
 
-	// Print summary
-	fmt.Printf("\nSucceeded\n\n")
-	for rtr := range succeeded {
-		fmt.Printf("%s\n", rtr)
-	}
-	if len(failed) == 0 {
-		fmt.Printf("(None)")
-	}
-	fmt.Printf("\n")
-
-	fmt.Printf("Failed\n\n")
-	for rtr := range failed {
-		fmt.Printf("%s\n", rtr)
-	}
-	if len(failed) == 0 {
-		fmt.Printf("(None)")
-	}
-	fmt.Printf("\n")
+	PrintSummary(succeeded, failed)
 }
 
 // PushDevices executes a command on many devices, prints the output.
@@ -442,21 +426,37 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 		}
 	}
 
+	PrintSummary(succeeded, failed)
+}
+
+func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
+	var sortedSucceeded = []string{}
+	for rtr := range succeeded {
+		sortedSucceeded = append(sortedSucceeded, rtr)
+	}
+	sort.Strings(sortedSucceeded)
+
+	var sortedFailed = []string{}
+	for rtr := range succeeded {
+		sortedSucceeded = append(sortedFailed, rtr)
+	}
+	sort.Strings(sortedFailed)
+
 	// Print summary
 	fmt.Printf("\nSucceeded\n\n")
-	for rtr := range succeeded {
+	for _, rtr := range sortedSucceeded {
 		fmt.Printf("%s\n", rtr)
 	}
-	if len(failed) == 0 {
+	if len(sortedSucceeded) == 0 {
 		fmt.Printf("(None)")
 	}
 	fmt.Printf("\n")
 
 	fmt.Printf("Failed\n\n")
-	for rtr := range failed {
+	for _, rtr := range sortedFailed {
 		fmt.Printf("%s\n", rtr)
 	}
-	if len(failed) == 0 {
+	if len(sortedFailed) == 0 {
 		fmt.Printf("(None)")
 	}
 	fmt.Printf("\n")
