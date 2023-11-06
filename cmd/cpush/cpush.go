@@ -568,7 +568,7 @@ Other flags are:`)
 		} else if topush != "" {
 			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
 		} else {
-			fmt.Errorf("nothing to do")
+			fmt.Fprint(os.Stderr, "nothing to do")
 		}
 	} else if strings.HasPrefix(*device, "file:") {
 		deviceFn := (*device)[5:]
@@ -583,7 +583,7 @@ Other flags are:`)
 		} else if topush != "" {
 			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
 		} else {
-			fmt.Errorf("nothing to do")
+			fmt.Fprint(os.Stderr, "nothing to do")
 		}
 	} else if *device != "" {
 		if *interactive {
@@ -605,7 +605,7 @@ Other flags are:`)
 				log.Fatalf("failed to push configlet %q on device %q: %v", topush, *device, err)
 			}
 		} else {
-			fmt.Errorf("nothing to do")
+			fmt.Fprint(os.Stderr, "nothing to do")
 		}
 
 		if *outputFile != "" {
