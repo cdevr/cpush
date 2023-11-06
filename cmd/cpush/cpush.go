@@ -485,8 +485,6 @@ func isFlagPresent(name string) bool {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
 
