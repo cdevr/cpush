@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+echo PRECOMMIT HOOK
+
+
+make
+git add "cmd/cpush/tags.go"
+git add "cmd/rcheck/tags.go"
