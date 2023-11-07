@@ -437,8 +437,8 @@ func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
 	sort.Strings(sortedSucceeded)
 
 	var sortedFailed = []string{}
-	for rtr := range succeeded {
-		sortedSucceeded = append(sortedFailed, rtr)
+	for rtr := range failed {
+		sortedFailed = append(sortedFailed, rtr)
 	}
 	sort.Strings(sortedFailed)
 
