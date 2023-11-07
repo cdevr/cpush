@@ -47,3 +47,9 @@ This will create the files "shver_router1" and "shver_router2" that contain the 
 Cpush has special logic to get close to atomic application of configuration pushes.
 
     cpush --device ip-rtr-1 --push 'int lo 99; ip addr 1.0.0.1 255.255.255.0'
+
+# Developing on this repository
+
+This repository uses git hooks. Please configure the git repository to actually use them.
+
+    git config core.hooksPath .githooks
