@@ -17,5 +17,4 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         name: Release ${{ github.ref }}
-        files: cpush rcheck
-        
+        files: cpush
