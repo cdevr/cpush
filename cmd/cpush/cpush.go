@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/cdevr/cpush/options"
+	"github.com/cdevr/cpush/texttable"
 
 	"github.com/cdevr/cpush/cisco"
 	"github.com/cdevr/cpush/configfile"
@@ -444,20 +445,20 @@ func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
 
 	// Print summary
 	fmt.Printf("\nSucceeded\n\n")
-	for _, rtr := range sortedSucceeded {
-		fmt.Printf("%s\n", rtr)
-	}
+
 	if len(sortedSucceeded) == 0 {
-		fmt.Printf("(None)")
+		fmt.Println("(None)")
+	} else {
+		fmt.Println(texttable.Columns(sortedSucceeded, 4))
 	}
 	fmt.Printf("\n")
 
 	fmt.Printf("Failed\n\n")
-	for _, rtr := range sortedFailed {
-		fmt.Printf("%s\n", rtr)
-	}
+
 	if len(sortedFailed) == 0 {
-		fmt.Printf("(None)")
+		fmt.Println("(None)")
+	} else {
+		fmt.Println(texttable.Columns(sortedFailed, 4))
 	}
 	fmt.Printf("\n")
 }
