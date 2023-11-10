@@ -1,8 +1,9 @@
 package texttable
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestTextTable(t *testing.T) {
@@ -11,7 +12,7 @@ two   five eight eleven
 three six  nine  twelve
 `
 	input := []string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"}
-	got := printArrayColumns(input, 4)
+	got := Columns(input, 4)
 
 	assert.Equal(t, got, want)
 }

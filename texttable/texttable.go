@@ -2,7 +2,7 @@ package texttable
 
 import "math"
 
-func printArrayColumns(list []string, columns int) string {
+func Columns(list []string, columns int) string {
 	columnLengths := []int{}
 
 	perColumn := int(math.Ceil(float64(len(list)) / float64(columns)))
