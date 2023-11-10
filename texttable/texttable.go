@@ -23,9 +23,16 @@ func Columns(list []string, columns int) string {
 	result := ""
 	for row := 0; row < perColumn; row++ {
 		for column := 0; column < columns; column++ {
-			value := list[column*perColumn+row]
+			idx := column*perColumn + row
+
+			value := ""
+			if idx < len(list) {
+				value = list[column*perColumn+row]
+			}
+
 			// Don't put added spaces on the last column.
-			if column != columns-1 {
+			idxToTheRight := (column+1)*perColumn + row
+			if idxToTheRight < len(list) {
 				for len(value) < columnLengths[column] {
 					value += " "
 				}
