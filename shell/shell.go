@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -52,7 +53,7 @@ func Interactive(opts *options.Options, device string, username string, password
 		addr = addr + ":22"
 	}
 
-	tcpconn, err := opts.Dial("tcp", addr)
+	tcpconn, err := opts.Dial(context.Background(), "tcp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}

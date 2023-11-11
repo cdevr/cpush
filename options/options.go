@@ -1,11 +1,13 @@
 package options
 
 import (
+	"context"
 	"net"
 	"time"
 )
 
 type Dialer func(network string, addr string) (net.Conn, error)
+type DialerTimeout func(network string, addr string, timeout time.Duration) (net.Conn, error)
 
 type Options struct {
 	SuppressBanner  bool
@@ -22,6 +24,6 @@ func NewOptions() *Options {
 	}
 }
 
-func (o *Options) Dial(network string, addr string) (net.Conn, error) {
+func (o *Options) Dial(ctx context.Context, network string, addr string) (net.Conn, error) {
 	return o.Dialer(network, addr)
 }

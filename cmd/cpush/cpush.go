@@ -594,6 +594,7 @@ Other flags are:`)
 			}
 			return
 		}
+
 		var output string
 		if *command != "" {
 			output, err = cisco.Cmd(opts, *device, *username, password, *command, *timeout)

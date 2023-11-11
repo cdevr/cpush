@@ -2,6 +2,7 @@ package cisco
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -71,7 +72,8 @@ func Push(opts *options.Options, device string, username string, password string
 		addr = addr + ":22"
 	}
 
-	tcpConn, err := opts.Dial("tcp", addr)
+	ctx, _ := context.WithTimeout(context.Background(), opts.Timeout)
+	tcpConn, err := opts.Dial(ctx, "tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
@@ -209,7 +211,8 @@ func Cmd(opts *options.Options, device string, username string, password string,
 		addr = addr + ":22"
 	}
 
-	tcpConn, err := opts.Dial("tcp", addr)
+	ctx, _ := context.WithTimeout(context.Background(), opts.Timeout)
+	tcpConn, err := opts.Dial(ctx, "tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
 	}
