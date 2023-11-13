@@ -208,7 +208,7 @@ func main() {
 	opts.SuppressSending = *suppressSending
 	opts.SuppressOutput = *suppressOutput
 	opts.Timeout = *timeout
-	opts.Dialer = dialer.Dial
+	opts.Dialer = dialer.DialContext
 
 	password, err := pwcache.GetPassword(*clearPwCache, *usePwCache)
 	if err != nil {
@@ -242,14 +242,14 @@ func main() {
 	os.Exit(0)
 }
 
-func MakeDialer(proxyAddress string) proxy.Dialer {
-	var dialer proxy.Dialer = proxy.Direct
+func MakeDialer(proxyAddress string) proxy.ContextDialer {
+	var dialer proxy.ContextDialer = proxy.Direct
 	if proxyAddress != "" {
-		var err error
-		dialer, err = proxy.SOCKS5("tcp", proxyAddress, nil, nil)
+		d, err := proxy.SOCKS5("tcp", proxyAddress, nil, nil)
 		if err != nil {
 			log.Fatalf("failed to make dialer for proxy server at %q: %v", proxyAddress, err)
 		}
+		dialer = d.(proxy.ContextDialer)
 	}
 	return dialer
 }
