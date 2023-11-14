@@ -246,9 +246,11 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			for _, line := range lines {
 				if !*suppressOutput {
 					if *showDeviceName {
-						fmt.Printf("%s%s: %s\n", clearLine, rtrOutput.router, line)
+						fmt.Fprint(os.Stderr, clearLine)
+						fmt.Printf("%s: %s\n", rtrOutput.router, line)
 					} else {
-						fmt.Printf("%s%s\n", clearLine, line)
+						fmt.Fprint(os.Stderr, clearLine)
+						fmt.Printf("%s\n", line)
 					}
 				}
 			}
@@ -412,9 +414,11 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 			for _, line := range lines {
 				if !*suppressOutput {
 					if *showDeviceName {
-						fmt.Printf("%s%s: %s\n", clearLine, rtrOutput.router, line)
+						fmt.Fprint(os.Stderr, clearLine)
+						fmt.Printf("%s: %s\n", rtrOutput.router, line)
 					} else {
-						fmt.Printf("%s%s\n", clearLine, line)
+						fmt.Fprint(os.Stderr, clearLine)
+						fmt.Printf("%s\n", line)
 					}
 				}
 			}
