@@ -42,6 +42,9 @@ func (b *ThreadSafeBuffer) DiscardUntil(p byte) error {
 }
 
 func (b *ThreadSafeBuffer) LastLine() string {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	lines := strings.Split(b.b.String(), "\n")
 	if len(lines) > 0 {
 		return lines[len(lines)-1]
