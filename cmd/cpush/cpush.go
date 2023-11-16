@@ -212,7 +212,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			expectedFinishStr = "..."
 		}
 
-		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
+		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount+skippedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
 	}
 
 	allDone := false
