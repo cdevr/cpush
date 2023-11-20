@@ -448,23 +448,23 @@ func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
 	sort.Strings(sortedFailed)
 
 	// Print summary
-	fmt.Printf("\nSucceeded\n\n")
+	fmt.Fprintf(os.Stderr, "\nSucceeded\n\n")
 
 	if len(sortedSucceeded) == 0 {
-		fmt.Println("(None)")
+		fmt.Fprintln(os.Stderr, "(None)")
 	} else {
-		fmt.Println(texttable.Columns(sortedSucceeded, 4))
+		fmt.Fprintln(os.Stderr, texttable.Columns(sortedSucceeded, 4))
 	}
-	fmt.Printf("\n")
+	fmt.Fprintf(os.Stderr, "\n")
 
-	fmt.Printf("Failed\n\n")
+	fmt.Fprintf(os.Stderr, "Failed\n\n")
 
 	if len(sortedFailed) == 0 {
-		fmt.Println("(None)")
+		fmt.Fprintln(os.Stderr, "(None)")
 	} else {
-		fmt.Println(texttable.Columns(sortedFailed, 4))
+		fmt.Fprintln(os.Stderr, texttable.Columns(sortedFailed, 4))
 	}
-	fmt.Printf("\n")
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // filterEmptyDevices trims spaces and removes empty string from a list of strings.
