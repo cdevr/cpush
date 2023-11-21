@@ -212,7 +212,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			expectedFinishStr = "..."
 		}
 
-		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount+skippedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
+		return fmt.Sprintf("%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount+skippedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
 	}
 
 	allDone := false
@@ -221,13 +221,13 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		case <-started:
 			startCount += 1
 			if !*suppressProgress {
-				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprint(os.Stderr, clearLine+progressLine())
 			}
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
 			if !*suppressProgress {
-				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprint(os.Stderr, clearLine+progressLine())
 			}
 		case re := <-errors:
 			failed[re.router] = true
@@ -257,7 +257,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		case <-done:
 			allDone = true
 			if !*suppressProgress {
-				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprint(os.Stderr, clearLine+progressLine())
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 		}
@@ -380,7 +380,7 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 			expectedFinishStr = "..."
 		}
 
-		return fmt.Sprintf(clearLine+"%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
+		return fmt.Sprintf("%d/%d/%d/%d %2.2f%% %s/%s expected finish @ %v", remaining, startCount, endedCount, len(devices), 100.0*progress, timeElapsed, expectedDurationStr, expectedFinishStr)
 	}
 
 	allDone := false
@@ -389,13 +389,13 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 		case <-started:
 			startCount += 1
 			if !*suppressProgress {
-				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprint(os.Stderr, clearLine+progressLine())
 			}
 		case <-ended:
 			startCount -= 1
 			endedCount += 1
 			if !*suppressProgress {
-				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprint(os.Stderr, clearLine+progressLine())
 			}
 		case re := <-errors:
 			failed[re.router] = true
@@ -425,7 +425,7 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 		case <-done:
 			allDone = true
 			if !*suppressProgress {
-				fmt.Fprint(os.Stderr, progressLine())
+				fmt.Fprint(os.Stderr, clearLine+progressLine())
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 		}
