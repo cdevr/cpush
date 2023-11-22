@@ -146,14 +146,14 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 		for device := range deviceChan {
 			var err error
 
-			for itry := 0; itry < *retries; itry += 1 {
+			for iTry := 0; iTry < *retries; iTry += 1 {
 				var output string
 				output, err = doDevice(device)
 				if err == nil {
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
-				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry+1, *retries)
+				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, iTry+1, *retries)
 			}
 
 			errors <- routerError{device, fmt.Errorf("failed in %d tries, last error: %v", *retries, err)}
@@ -314,14 +314,14 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 		for device := range deviceChan {
 			var err error
 
-			for itry := 0; itry < *retries; itry += 1 {
+			for iTry := 0; iTry < *retries; iTry += 1 {
 				var output string
 				output, err = doDevice(device)
 				if err == nil {
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
-				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, itry+1, *retries)
+				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, iTry+1, *retries)
 			}
 
 			errors <- routerError{device, fmt.Errorf("failed in %d tries, last error: %v", *retries, err)}
@@ -435,13 +435,13 @@ func PushDevices(opts *options.Options, concurrentLimit int, devices []string, u
 }
 
 func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
-	var sortedSucceeded = []string{}
+	var sortedSucceeded []string
 	for rtr := range succeeded {
 		sortedSucceeded = append(sortedSucceeded, rtr)
 	}
 	sort.Strings(sortedSucceeded)
 
-	var sortedFailed = []string{}
+	var sortedFailed []string
 	for rtr := range failed {
 		sortedFailed = append(sortedFailed, rtr)
 	}
@@ -493,7 +493,7 @@ func main() {
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
 
-	// Set suppress_output flag if output flag was passed, unless overriden.
+	// Set suppress_output flag if output flag was passed, unless override.
 	if !isFlagPresent("suppress_output") && isFlagPresent("output") {
 		*suppressOutput = true
 	}
@@ -553,15 +553,15 @@ Other flags are:`)
 		return
 	}
 
-	topush := ""
+	toPush := ""
 	if *push != "" {
-		topush = *push
-		if fn := strings.TrimPrefix(topush, "file:"); fn != topush {
-			topushBytes, err := os.ReadFile(fn)
+		toPush = *push
+		if fn := strings.TrimPrefix(toPush, "file:"); fn != toPush {
+			toPushBytes, err := os.ReadFile(fn)
 			if err != nil {
 				log.Fatalf("failed to read push lines from %q: %v", fn, err)
 			}
-			topush = string(topushBytes)
+			toPush = string(toPushBytes)
 		}
 	}
 
@@ -570,8 +570,8 @@ Other flags are:`)
 
 		if *command != "" {
 			CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
-		} else if topush != "" {
-			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
+		} else if toPush != "" {
+			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, toPush, *shuffle)
 		} else {
 			fmt.Fprint(os.Stderr, "nothing to do")
 		}
@@ -585,8 +585,8 @@ Other flags are:`)
 
 		if *command != "" {
 			CmdDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, *command, *shuffle)
-		} else if topush != "" {
-			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, topush, *shuffle)
+		} else if toPush != "" {
+			PushDevices(opts, *concurrentLimit, filterEmptyDevices(devices), *username, password, toPush, *shuffle)
 		} else {
 			fmt.Fprint(os.Stderr, "nothing to do")
 		}
@@ -605,10 +605,10 @@ Other flags are:`)
 			if err != nil {
 				log.Fatalf("failed to execute command %q on device %q: %v", *command, *device, err)
 			}
-		} else if topush != "" {
-			output, err = cisco.Push(opts, *device, *username, password, topush)
+		} else if toPush != "" {
+			output, err = cisco.Push(opts, *device, *username, password, toPush)
 			if err != nil {
-				log.Fatalf("failed to push configlet %q on device %q: %v", topush, *device, err)
+				log.Fatalf("failed to push configlet %q on device %q: %v", toPush, *device, err)
 			}
 		} else {
 			fmt.Fprint(os.Stderr, "nothing to do")

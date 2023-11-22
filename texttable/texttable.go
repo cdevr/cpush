@@ -3,7 +3,7 @@ package texttable
 import "math"
 
 func Columns(list []string, columns int) string {
-	columnLengths := []int{}
+	var columnLengths []int
 
 	perColumn := int(math.Ceil(float64(len(list)) / float64(columns)))
 
