@@ -518,6 +518,15 @@ Other flags are:`)
 		flag.Usage()
 		return
 	}
+
+	password, err := pwcache.GetPassword(*clearPwCache, *usePwCache)
+	if err != nil {
+		log.Fatalf("error getting password for user: %v", err)
+	}
+	if *clearPwCache {
+		return
+	}
+
 	// Allow device and command arguments to be passed in as non-args.
 	if *device == "" && flag.NArg() == 1 && *command == "" && *push == "" {
 		*device = flag.Arg(0)
@@ -544,14 +553,6 @@ Other flags are:`)
 	opts.SuppressOutput = *suppressOutput
 	opts.Timeout = *timeout
 	opts.Dialer = dialer.DialContext
-
-	password, err := pwcache.GetPassword(*clearPwCache, *usePwCache)
-	if err != nil {
-		log.Fatalf("error getting password for user: %v", err)
-	}
-	if *clearPwCache {
-		return
-	}
 
 	toPush := ""
 	if *push != "" {
