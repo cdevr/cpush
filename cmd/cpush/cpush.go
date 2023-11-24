@@ -166,10 +166,12 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	}
 
 	go func() {
+		// Shuffle devices to do them in random order if requested.
 		if shuffle {
 			rand.Shuffle(len(devices), func(i, j int) { devices[i], devices[j] = devices[j], devices[i] })
 		}
-		// First skip all the ones we're going to skip.
+
+		// Skip all the devices we're going to skip.
 		var dontSkip []string
 		for _, d := range devices {
 			// Skip this device if the output file already exists.
