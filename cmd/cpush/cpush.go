@@ -113,7 +113,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 	started := make(chan bool)
 	ended := make(chan bool)
 
-	startCount := 0
+	retry := make(chan string)
 	skippedCount := 0
 	endedCount := 0
 
@@ -153,7 +153,7 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 					outputs <- routerOutput{device, output}
 					continue devices
 				}
-				fmt.Fprintf(os.Stderr, clearLine+"Retrying %q: %d/%d\n", device, iTry+1, *retries)
+				retry <- fmt.Sprintf("Retrying %q: %d/%d", device, iTry+1, *retries)
 			}
 
 			errors <- routerError{device, fmt.Errorf("failed in %d tries, last error: %v", *retries, err)}
@@ -231,6 +231,9 @@ func CmdDevices(opts *options.Options, concurrentLimit int, devices []string, us
 			if !*suppressProgress {
 				fmt.Fprint(os.Stderr, clearLine+progressLine())
 			}
+		case msg := <-retry:
+			fmt.Fprintf(os.Stderr, clearLine+msg+"\n")
+			fmt.Fprint(os.Stderr, clearLine+progressLine())
 		case re := <-errors:
 			failed[re.router] = true
 			fmt.Fprintf(os.Stderr, clearLine+"error on %q: %v\n", re.router, re.err)
