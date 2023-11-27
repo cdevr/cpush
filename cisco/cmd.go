@@ -56,7 +56,7 @@ func respondInteractive(password string) func(user, instruction string, question
 }
 
 // Push pushes a configlet to an ios device.
-func Push(opts *options.Options, device string, username string, password string, configlet string) (string, error) {
+func Push(opts *options.Options, device string, username string, password string, configlet string, timeout time.Duration) (string, error) {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
