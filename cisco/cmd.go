@@ -170,6 +170,17 @@ func Push(opts *options.Options, device string, username string, password string
 
 	utils.WaitForPrompt(&output, 2*time.Second, false)
 
+	if strings.Contains(output.String(), "Invalid input") {
+		var errorLines []string
+		for _, line := range strings.Split(output.String(), "\n") {
+			if strings.Contains(line, "Invalid input") {
+				errorLines = append(errorLines, line)
+			}
+		}
+
+		return output.String(), fmt.Errorf("error in configlet: %q", strings.Join(errorLines, "\n"))
+	}
+
 	return output.String(), nil
 }
 
