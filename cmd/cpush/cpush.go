@@ -426,7 +426,7 @@ Other flags are:`)
 		deviceFn := (*device)[5:]
 		fileLines, err := os.ReadFile(deviceFn)
 		if err != nil {
-			log.Fatalf("failed to read device file %q: %v", deviceFn, err)
+			log.Fatalf("failed to read devices list file %q: %v", deviceFn, err)
 		}
 		devices := strings.Split(string(fileLines), "\n")
 
