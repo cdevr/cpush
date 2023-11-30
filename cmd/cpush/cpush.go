@@ -255,6 +255,7 @@ func DoManyDevices(opts *options.Options, concurrentLimit int, devices []string,
 			}
 
 			lines := strings.Split(rtrOutput.output, "\n")
+			written := false
 			for _, line := range lines {
 				if !*suppressOutput {
 					if *showDeviceName {
@@ -264,7 +265,11 @@ func DoManyDevices(opts *options.Options, concurrentLimit int, devices []string,
 						fmt.Fprint(os.Stderr, clearLine)
 						fmt.Printf("%s\n", line)
 					}
+					written = true
 				}
+			}
+			if written {
+				os.Stdout.Sync()
 			}
 			fmt.Fprint(os.Stderr, clearLine+progressLine())
 		case <-done:
