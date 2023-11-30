@@ -335,6 +335,19 @@ func isFlagPresent(name string) bool {
 	return found
 }
 
+// ResolveFilePrefix will read a string, and if it starts with "file:" will replace it with the contents
+// of the file specified.
+func ResolveFilePrefix(s string) (string, error) {
+	if fn := strings.TrimPrefix(s, "file:"); fn != s {
+		bts, err := os.ReadFile(fn)
+		if err != nil {
+			return "", err
+		}
+		return string(bts), nil
+	}
+	return s, nil
+}
+
 func main() {
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
@@ -400,16 +413,9 @@ Other flags are:`)
 	opts.Timeout = *timeout
 	opts.Dialer = dialer.DialContext
 
-	toPush := ""
-	if *push != "" {
-		toPush = *push
-		if fn := strings.TrimPrefix(toPush, "file:"); fn != toPush {
-			toPushBytes, err := os.ReadFile(fn)
-			if err != nil {
-				log.Fatalf("failed to read push lines from %q: %v", fn, err)
-			}
-			toPush = string(toPushBytes)
-		}
+	toPush, err := ResolveFilePrefix(*push)
+	if err != nil {
+		log.Fatalf("error resolving %q: %v", *push, err)
 	}
 
 	if strings.Contains(*device, ",") {
