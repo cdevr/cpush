@@ -18,6 +18,17 @@ func indentLevel(s string) int {
 	return result
 }
 
+// ConfigToFormal puts normal cisco config in IOS XR "formal" config, somewhat like Juniper's "set" config.
+//
+// An example can explain this better:
+//
+//	interface loopback0
+//	  description boembabies
+//
+// becomes:
+//
+//	interface loopback0
+//	interface loopback0 description boembabies
 func ConfigToFormal(c1 string) string {
 	var result []string
 	lines := strings.Split(c1, "\n")
