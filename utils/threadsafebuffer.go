@@ -24,7 +24,7 @@ func (b *ThreadSafeBuffer) DiscardUntil(p byte) error {
 	defer b.m.Unlock()
 
 	for {
-		// Reached end of buffer.
+		// Reached the end of the buffer.
 		if b.b.Len() == 0 {
 			return nil
 		}

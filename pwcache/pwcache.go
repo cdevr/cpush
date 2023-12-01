@@ -11,7 +11,7 @@ import (
 	"golang.org/x/term"
 )
 
-// GetPassword gets the password, or reads the cached password from /dev/shm.
+// GetPassword gets the password or reads the cached password from /dev/shm.
 func GetPassword(clearCache bool, usePwCache bool) (string, error) {
 	userName, err := user.Current()
 	if err != nil {

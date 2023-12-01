@@ -78,7 +78,7 @@ func Interactive(opts *options.Options, device string, username string, password
 		return fmt.Errorf("failed to get pty on device %q: %v", device, err)
 	}
 
-	// Set terminal to raw mode so single keys work.
+	// Set the terminal to raw mode so single keys work.
 	oldTerminalState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to set Terminal to raw mode: %v", err)
