@@ -315,7 +315,7 @@ func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
 	} else {
 		fmt.Fprintln(os.Stderr, texttable.Columns(sortedFailed, 4))
 	}
-	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintln(os.Stderr)
 }
 
 // filterEmptyDevices trims spaces and removes empty string from a list of strings.
