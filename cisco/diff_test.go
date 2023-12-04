@@ -96,7 +96,38 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			"trivial multiline example",
+			dedent(`
+			line1
+			line2
+			`),
+			ConfLine{
+				"",
+				[]ConfLine{
+					ConfLine{"line1", nil},
+					ConfLine{"line2", nil},
+				},
+			},
+		},
+		{
 			"one section example",
+			dedent(`
+			interface loopback0
+			 description boembabies
+			 ip address 1.0.0.1 255.255.255.0
+			`),
+			ConfLine{
+				"",
+				[]ConfLine{
+					ConfLine{"inerface loopback0", []ConfLine{
+						ConfLine{"description boembabies", nil},
+						ConfLine{"ip address 1.0.0.01 255.255.255.0", nil},
+					}},
+				},
+			},
+		},
+		{
+			"two sections test",
 			dedent(`
 			interface loopback0
 			 description boembabies
@@ -115,23 +146,6 @@ func TestParse(t *testing.T) {
 					ConfLine{"inerface loopback1", []ConfLine{
 						ConfLine{"description boembabies", nil},
 						ConfLine{"ip address 2.0.0.1 255.255.255.0", nil},
-					}},
-				},
-			},
-		},
-		{
-			"one section example",
-			dedent(`
-			interface loopback0
-			 description boembabies
-			 ip address 1.0.0.1 255.255.255.0
-			`),
-			ConfLine{
-				"",
-				[]ConfLine{
-					ConfLine{"inerface loopback0", []ConfLine{
-						ConfLine{"description boembabies", nil},
-						ConfLine{"ip address 1.0.0.01 255.255.255.0", nil},
 					}},
 				},
 			},

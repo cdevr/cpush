@@ -54,6 +54,11 @@ func ConfigToFormal(c1 string) string {
 	return strings.Join(result, "\n")
 }
 
+// A cisco configuration consists of "conflines", which are really just lines,
+// that can start a section. For example:
+//
+// interface loopback0
+//  description boembabies
 type ConfLine struct {
 	line     string
 	subLines []ConfLine
