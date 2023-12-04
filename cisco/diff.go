@@ -74,7 +74,7 @@ func Parse(conf string) ConfLine {
 
 func parseLines(lines []string) ConfLine {
 	if len(lines) == 0 {
-		return ConfLine{""}
+		return ConfLine{"", nil}
 	}
 
 	result := ConfLine{lines[0], nil}
