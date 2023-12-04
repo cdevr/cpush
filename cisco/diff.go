@@ -46,6 +46,7 @@ func ConfigToFormal(c1 string) string {
 		case lineIndent < lastIndent:
 			lastHeadings = lastHeadings[:len(lastHeadings)-1]
 			lastIndent = lineIndent
+			lastHeadings[lineIndent] = line
 		default:
 			lastHeadings[lineIndent] = line
 		}

@@ -71,6 +71,16 @@ func TestLinesToFormalSimple(t *testing.T) {
 			),
 			"interface loopback0\ninterface loopback0 description boembabies\ninterface loopback0 ip address 1.0.0.1 255.255.255.252",
 		},
+		{
+			"2 multiline sections",
+			dedent(`
+			interface loopback0
+			 description boembabies
+			interface loopback1
+			 description boembabies2`,
+			),
+			"interface loopback0\ninterface loopback0 description boembabies\ninterface loopback1\ninterface loopback1 description boembabies2",
+		},
 	}
 
 	for _, test := range tests {
