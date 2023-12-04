@@ -7,6 +7,9 @@ import (
 	"github.com/go-test/deep"
 )
 
+// dedent is a helper function to allow for nicely formatted
+// multiline strings in tests. It removes the indentation of the first
+// (or second) line from all lines in the string.
 func dedent(s string) string {
 	lines := strings.Split(s, "\n")
 	if len(lines) == 0 {
