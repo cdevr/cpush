@@ -79,37 +79,69 @@ func TestLinesToFormalSimple(t *testing.T) {
 	}
 }
 
-func TestCompare(t *testing.T) {
+func TestParse(t *testing.T) {
 	tests := []struct {
 		Description string
 		Input       string
-		WantEqual   bool
-		WantDiff    []string
-		WantErr     error
+		Want        ConfLine
 	}{
 		{
 			"trivial example",
 			"description boembabies",
-			true,
-			[]string{
-				`description boembabies`,
+			ConfLine{
+				"",
+				[]ConfLine{
+					ConfLine{"description boembabies", nil},
+				},
 			},
-			nil,
+		},
+		{
+			"one section example",
+			dedent(`
+			interface loopback0
+			 description boembabies
+			 ip address 1.0.0.1 255.255.255.0
+			interface loopback1
+			 description alsoboembabies
+			 ip address 2.0.0.1 255.255.255.0
+			`),
+			ConfLine{
+				"",
+				[]ConfLine{
+					ConfLine{"inerface loopback0", []ConfLine{
+						ConfLine{"description boembabies", nil},
+						ConfLine{"ip address 1.0.0.1 255.255.255.0", nil},
+					}},
+					ConfLine{"inerface loopback1", []ConfLine{
+						ConfLine{"description boembabies", nil},
+						ConfLine{"ip address 2.0.0.1 255.255.255.0", nil},
+					}},
+				},
+			},
+		},
+		{
+			"one section example",
+			dedent(`
+			interface loopback0
+			 description boembabies
+			 ip address 1.0.0.1 255.255.255.0
+			`),
+			ConfLine{
+				"",
+				[]ConfLine{
+					ConfLine{"inerface loopback0", []ConfLine{
+						ConfLine{"description boembabies", nil},
+						ConfLine{"ip address 1.0.0.01 255.255.255.0", nil},
+					}},
+				},
+			},
 		},
 	}
 
 	for _, test := range tests {
-		gotEqual, gotDiff, gotErr := Compare(test.Input, "")
-		if gotEqual != test.WantEqual {
-			t.Errorf("test %s: equal got %t want %t", test.Description, gotEqual, test.WantEqual)
-		}
-
-		if diff := deep.Equal(gotDiff, test.WantDiff); diff != nil {
-			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, gotDiff, test.Input, strings.Join(diff, "\n"))
-		}
-
-		if gotErr != test.WantErr {
-			t.Errorf("test %q: err got %v want %v", test.Description, gotErr, test.WantErr)
+		got := Parse(test.Input)
+		if diff := deep.Equal(got, test.Want); diff != nil {
+			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Want, strings.Join(diff, "\n"))
 		}
 	}
 }

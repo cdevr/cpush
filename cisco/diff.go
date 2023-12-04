@@ -54,6 +54,45 @@ func ConfigToFormal(c1 string) string {
 	return strings.Join(result, "\n")
 }
 
-func Compare(c1, c2 string) (equal bool, diff string, err error) {
-	return false, "", nil
+type ConfLine struct {
+	line     string
+	subLines []ConfLine
+}
+
+func Parse(conf string) ConfLine {
+	lines := strings.Split(conf, "\n")
+	if len(lines) == 0 {
+		return ConfLine{"", nil}
+	}
+	return parseLines(lines)
+}
+
+func parseLines(lines []string) ConfLine {
+	if len(lines) == 0 {
+		panic("this should never happen!")
+	}
+
+	result := ConfLine{lines[0], nil}
+	lastIndent := indentLevel(lines[0])
+
+	for idx, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if strings.TrimSpace(line) == "!" {
+			continue
+		}
+		lineIndent := indentLevel(line)
+		switch {
+		case lineIndent > lastIndent:
+			subLine := parseLines(lines[idx:])
+			result.subLines = append(result.subLines, subLine)
+		case lineIndent < lastIndent:
+			return result
+		default:
+			subLine := ConfLine{line, nil}
+			result.subLines = append(result.subLines, subLine)
+		}
+	}
+	return result
 }
