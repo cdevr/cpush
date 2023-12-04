@@ -86,6 +86,14 @@ func TestParse(t *testing.T) {
 		Want        ConfLine
 	}{
 		{
+			"empty example",
+			"",
+			ConfLine{
+				"",
+				nil,
+			},
+		},
+		{
 			"trivial example",
 			"description boembabies",
 			ConfLine{
