@@ -112,7 +112,7 @@ func TestParse(t *testing.T) {
 			ConfLine{
 				"",
 				[]ConfLine{
-					ConfLine{"description boembabies", nil},
+					{"description boembabies", nil},
 				},
 			},
 		},
@@ -125,8 +125,8 @@ func TestParse(t *testing.T) {
 			ConfLine{
 				"",
 				[]ConfLine{
-					ConfLine{"line1", nil},
-					ConfLine{"line2", nil},
+					{"line1", nil},
+					{"line2", nil},
 				},
 			},
 		},
@@ -140,9 +140,9 @@ func TestParse(t *testing.T) {
 			ConfLine{
 				"",
 				[]ConfLine{
-					ConfLine{"inerface loopback0", []ConfLine{
-						ConfLine{"description boembabies", nil},
-						ConfLine{"ip address 1.0.0.01 255.255.255.0", nil},
+					{"inerface loopback0", []ConfLine{
+						{"description boembabies", nil},
+						{"ip address 1.0.0.01 255.255.255.0", nil},
 					}},
 				},
 			},
@@ -160,13 +160,13 @@ func TestParse(t *testing.T) {
 			ConfLine{
 				"",
 				[]ConfLine{
-					ConfLine{"inerface loopback0", []ConfLine{
-						ConfLine{"description boembabies", nil},
-						ConfLine{"ip address 1.0.0.1 255.255.255.0", nil},
+					{"inerface loopback0", []ConfLine{
+						{"description boembabies", nil},
+						{"ip address 1.0.0.1 255.255.255.0", nil},
 					}},
-					ConfLine{"inerface loopback1", []ConfLine{
-						ConfLine{"description boembabies", nil},
-						ConfLine{"ip address 2.0.0.1 255.255.255.0", nil},
+					{"inerface loopback1", []ConfLine{
+						{"description boembabies", nil},
+						{"ip address 2.0.0.1 255.255.255.0", nil},
 					}},
 				},
 			},
