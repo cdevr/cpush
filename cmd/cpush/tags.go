@@ -3,6 +3,6 @@ package main
 import "time"
 
 var (
-	buildTime = time.UnixMicro(1702918005933522)
-	buildGitRevision = "322716955901572cd43693c446bb606759909194"
+	buildTime = time.UnixMicro(1702918090418190)
+	buildGitRevision = "6bb568685d4a2942a43f218dd93eb9e5e0227287"
 )

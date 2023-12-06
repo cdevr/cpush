@@ -333,7 +333,7 @@ func Cmd(opts *options.Options, device string, username string, password string,
 		close(done)
 	}()
 
-	remainingTime := whenToQuit.Sub(time.Now())
+	remainingTime := time.Until(whenToQuit)
 	select {
 	case <-done:
 		// Determine the
