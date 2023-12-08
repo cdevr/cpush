@@ -180,3 +180,27 @@ func TestParse(t *testing.T) {
 		}
 	}
 }
+
+func TestApply(t *testing.T) {
+	tests := []struct {
+		Description string
+		Config      string
+		Apply       string
+		Want        string
+	}{
+		{
+			"simple hostname change",
+			"hostname boem",
+			"hostname babies",
+			"hostname babies",
+		},
+	}
+
+	for _, test := range tests {
+		got := Apply(test.Config, test.Apply)
+
+		if diff := deep.Equal(got, test.Want); diff != nil {
+			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Want, strings.Join(diff, "\n"))
+		}
+	}
+}
