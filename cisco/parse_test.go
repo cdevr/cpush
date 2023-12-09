@@ -178,6 +178,12 @@ func TestParse(t *testing.T) {
 		if diff := deep.Equal(got, test.Want); diff != nil {
 			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Want, strings.Join(diff, "\n"))
 		}
+
+		// And try to reverse it again.
+		backToString := got.String()
+		if diff := deep.Equal(backToString, test.Input); diff != nil {
+			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Input, strings.Join(diff, "\n"))
+		}
 	}
 }
 

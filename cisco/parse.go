@@ -1,7 +1,10 @@
 // Package diff contains functions to diff ios config files and to apply configlets in simulation.
 package cisco
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func indentLevel(s string) int {
 	if strings.Trim(s, " ") == "" {
@@ -68,7 +71,8 @@ func Apply(config string, apply string) string {
 // that can start a section. For example:
 //
 // interface loopback0
-//  description boembabies
+//
+//	description boembabies
 type ConfLine struct {
 	line     string
 	subLines []ConfLine
@@ -112,9 +116,22 @@ func parseLines(lines []string) ConfLine {
 	return result
 }
 
+func (c *ConfLine) StringPrefix(prefix string) string {
+	if c == nil {
+		return ""
+	}
+	var result string
+	result += fmt.Sprintf("%s\n", c.line)
+	for _, sl := range c.subLines {
+		newPrefix := fmt.Sprintf(" %s ", prefix)
+		result += sl.StringPrefix(newPrefix)
+	}
+
+	return result
+}
+
 func (c *ConfLine) String() string {
-	// TODO
-	return "TODO"
+	return c.StringPrefix("")
 }
 
 func (c *ConfLine) Apply(a *ConfLine) ConfLine {
