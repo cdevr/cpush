@@ -83,18 +83,27 @@ func Parse(conf string) ConfLine {
 	if len(lines) == 0 {
 		return ConfLine{"", nil}
 	}
-	return parseLines(lines)
+	return parseLines(lines, true)
 }
 
-func parseLines(lines []string) ConfLine {
+func parseLines(lines []string, top bool) ConfLine {
 	if len(lines) == 0 {
 		return ConfLine{"", nil}
 	}
+	if len(lines) == 1 {
+		return ConfLine{lines[0], nil}
+	}
 
 	result := ConfLine{lines[0], nil}
+	if top {
+		result = ConfLine{"", nil}
+	}
 	lastIndent := indentLevel(lines[0])
 
 	for idx, line := range lines {
+		if idx == 0 && top == false {
+			continue
+		}
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
@@ -104,7 +113,7 @@ func parseLines(lines []string) ConfLine {
 		lineIndent := indentLevel(line)
 		switch {
 		case lineIndent > lastIndent:
-			subLine := parseLines(lines[idx:])
+			subLine := parseLines(lines[idx:], false)
 			result.subLines = append(result.subLines, subLine)
 		case lineIndent < lastIndent:
 			return result
@@ -121,9 +130,14 @@ func (c *ConfLine) StringPrefix(prefix string) string {
 		return ""
 	}
 	var result string
-	result += fmt.Sprintf("%s\n", c.line)
+	if c.line != "" {
+		result += fmt.Sprintf("%s\n", c.line)
+	}
 	for _, sl := range c.subLines {
-		newPrefix := fmt.Sprintf(" %s ", prefix)
+		newPrefix := fmt.Sprintf(" %s", prefix)
+		if c.line == "" {
+			newPrefix = ""
+		}
 		result += sl.StringPrefix(newPrefix)
 	}
 
@@ -131,7 +145,7 @@ func (c *ConfLine) StringPrefix(prefix string) string {
 }
 
 func (c *ConfLine) String() string {
-	return c.StringPrefix("")
+	return strings.TrimSuffix(c.StringPrefix(""), "\n")
 }
 
 func (c *ConfLine) Apply(a *ConfLine) ConfLine {

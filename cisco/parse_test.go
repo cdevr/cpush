@@ -120,8 +120,7 @@ func TestParse(t *testing.T) {
 			"trivial multiline example",
 			dedent(`
 			line1
-			line2
-			`),
+			line2`),
 			ConfLine{
 				"",
 				[]ConfLine{
@@ -135,8 +134,7 @@ func TestParse(t *testing.T) {
 			dedent(`
 			interface loopback0
 			 description boembabies
-			 ip address 1.0.0.1 255.255.255.0
-			`),
+			 ip address 1.0.0.1 255.255.255.0`),
 			ConfLine{
 				"",
 				[]ConfLine{
@@ -182,7 +180,7 @@ func TestParse(t *testing.T) {
 		// And try to reverse it again.
 		backToString := got.String()
 		if diff := deep.Equal(backToString, test.Input); diff != nil {
-			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Input, strings.Join(diff, "\n"))
+			t.Errorf("test %q: differences found: got\n%q\nwant\n%q\ndiff\n%s\n", test.Description, backToString, test.Input, strings.Join(diff, "\n"))
 		}
 	}
 }
