@@ -153,8 +153,7 @@ func TestParse(t *testing.T) {
 			 ip address 1.0.0.1 255.255.255.0
 			interface loopback1
 			 description alsoboembabies
-			 ip address 2.0.0.1 255.255.255.0
-			`),
+			 ip address 2.0.0.1 255.255.255.0`),
 			ConfLine{
 				"",
 				[]ConfLine{

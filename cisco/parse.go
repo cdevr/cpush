@@ -118,8 +118,12 @@ func parseLines(lines []string, top bool) ConfLine {
 		case lineIndent < lastIndent:
 			return result
 		default:
-			subLine := ConfLine{line, nil}
-			result.subLines = append(result.subLines, subLine)
+			if top {
+				subLine := ConfLine{line, nil}
+				result.subLines = append(result.subLines, subLine)
+			} else {
+				return result
+			}
 		}
 	}
 	return result
