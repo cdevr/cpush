@@ -58,15 +58,6 @@ func ConfigToFormal(c1 string) string {
 	return strings.Join(result, "\n")
 }
 
-// Apply applies a configlet to a router config and returns the result.
-func Apply(config string, apply string) string {
-	c := Parse(config)
-	a := Parse(apply)
-
-	result := c.Apply(&a)
-	return result.String()
-}
-
 // A cisco configuration consists of "conflines", which are really just lines,
 // that can start a section. For example:
 //
@@ -150,6 +141,15 @@ func (c *ConfLine) StringPrefix(prefix string) string {
 
 func (c *ConfLine) String() string {
 	return strings.TrimSuffix(c.StringPrefix(""), "\n")
+}
+
+// Apply applies a configlet to a router config and returns the result.
+func Apply(config string, apply string) string {
+	c := Parse(config)
+	a := Parse(apply)
+
+	result := c.Apply(&a)
+	return result.String()
 }
 
 func (c *ConfLine) Apply(a *ConfLine) ConfLine {
