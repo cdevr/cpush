@@ -178,6 +178,7 @@ func Push(opts *options.Options, device string, username string, password string
 			}
 		}
 
+		fmt.Printf("output: %s\n", output.String())
 		return output.String(), fmt.Errorf("error in configlet: %q", strings.Join(errorLines, "\n"))
 	}
 
