@@ -299,7 +299,7 @@ func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
 	sort.Strings(sortedFailed)
 
 	// Print summary
-	fmt.Fprintf(os.Stderr, "\nSucceeded\n\n")
+	fmt.Fprintf(os.Stderr, "\nSucceeded (%d devices)\n\n", len(sortedSucceeded))
 
 	if len(sortedSucceeded) == 0 {
 		fmt.Fprintln(os.Stderr, "(None)")
@@ -308,7 +308,7 @@ func PrintSummary(succeeded map[string]bool, failed map[string]bool) {
 	}
 	fmt.Fprintf(os.Stderr, "\n")
 
-	fmt.Fprintf(os.Stderr, "Failed\n\n")
+	fmt.Fprintf(os.Stderr, "Failed (%d devices)\n\n", len(sortedFailed))
 
 	if len(sortedFailed) == 0 {
 		fmt.Fprintln(os.Stderr, "(None)")
