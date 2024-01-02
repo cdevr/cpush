@@ -153,5 +153,12 @@ func Apply(config string, apply string) string {
 }
 
 func (c *ConfLine) Apply(a *ConfLine) ConfLine {
-	return ConfLine{}
+	splitC := strings.Split(c.line, " ")
+	splitA := strings.Split(a.line, " ")
+
+	result := ConfLine{}
+	if splitC[0] == splitA[0] {
+		result.line = a.line
+	}
+	return result
 }
