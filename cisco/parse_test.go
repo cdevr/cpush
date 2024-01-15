@@ -197,6 +197,12 @@ func TestApply(t *testing.T) {
 			"hostname babies",
 			"hostname babies",
 		},
+		// {
+		// 	"simple multilevel change",
+		// 	"interface loopback0\n description loopback",
+		// 	"interface loopback0\n description newdesc",
+		// 	"interface loopback0\n description newdesc",
+		// },
 	}
 
 	for _, test := range tests {
