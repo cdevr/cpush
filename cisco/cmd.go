@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -198,6 +199,7 @@ func sshConfig() ssh.Config {
 
 // Cmd executes a command on a device and returns the output.
 func Cmd(opts *options.Options, device string, username string, password string, cmd string, timeout time.Duration) (string, error) {
+	log.Printf("cmd called with timeout of %v", timeout)
 	// Sets the time when the timeout has elapsed.
 	var whenToQuit = time.Now().Add(timeout)
 
