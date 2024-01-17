@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -199,13 +198,8 @@ func sshConfig() ssh.Config {
 
 // Cmd executes a command on a device and returns the output.
 func Cmd(opts *options.Options, device string, username string, password string, cmd string, timeout time.Duration) (string, error) {
-	log.Printf("cmd called with timeout of %v", timeout)
 	// Sets the time when the timeout has elapsed.
 	var whenToQuit = time.Now().Add(timeout)
-
-	// if time.Now().After(whenToQuit) {
-	// 	return "", fmt.Errorf("timeout executing command on %q: %v elapsed", device, timeout)
-	// }
 
 	var result bytes.Buffer
 
@@ -338,9 +332,9 @@ func Cmd(opts *options.Options, device string, username string, password string,
 	remainingTime := time.Until(whenToQuit)
 	select {
 	case <-done:
-		// Determine the
+		// Done!
 	case <-time.After(remainingTime):
-		return "", fmt.Errorf("timeout of %v hit", opts.Timeout)
+		return "", fmt.Errorf("timeout (%v) hit", opts.Timeout)
 	}
 	return RemovePromptSuffix(result.String()), nil
 }
