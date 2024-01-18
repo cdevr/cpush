@@ -163,7 +163,9 @@ func (c *ConfLine) Apply(a *ConfLine) ConfLine {
 		return result
 	}
 	// If this is a section start, dive into it if the first line matches entirely
-	if len(c.subLines) != 0 && len(a.subLines) != 0 
+	if len(c.subLines) != 0 && len(a.subLines) != 0 {
+
+	}
 
 	return result
 }
