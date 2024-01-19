@@ -81,9 +81,6 @@ func parseLines(lines []string, top bool) ConfLine {
 	if len(lines) == 0 {
 		return ConfLine{"", nil}
 	}
-	if len(lines) == 1 {
-		return ConfLine{lines[0], nil}
-	}
 
 	result := ConfLine{lines[0], nil}
 	if top {
