@@ -65,8 +65,8 @@ func ConfigToFormal(c1 string) string {
 //
 //	description boembabies
 type ConfLine struct {
-	line     string
-	subLines []ConfLine
+	Line     string
+	SubLines []ConfLine
 }
 
 func Parse(conf string) ConfLine {
@@ -105,13 +105,13 @@ func parseLines(lines []string, top bool) ConfLine {
 		switch {
 		case lineIndent > lastIndent:
 			subLine := parseLines(lines[idx:], false)
-			result.subLines = append(result.subLines, subLine)
+			result.SubLines = append(result.SubLines, subLine)
 		case lineIndent < lastIndent:
 			return result
 		default:
 			if top {
 				subLine := ConfLine{line, nil}
-				result.subLines = append(result.subLines, subLine)
+				result.SubLines = append(result.SubLines, subLine)
 			} else {
 				return result
 			}
@@ -125,12 +125,12 @@ func (c *ConfLine) StringPrefix(prefix string) string {
 		return ""
 	}
 	var result string
-	if c.line != "" {
-		result += fmt.Sprintf("%s\n", c.line)
+	if c.Line != "" {
+		result += fmt.Sprintf("%s\n", c.Line)
 	}
-	for _, sl := range c.subLines {
+	for _, sl := range c.SubLines {
 		newPrefix := fmt.Sprintf(" %s", prefix)
-		if c.line == "" {
+		if c.Line == "" {
 			newPrefix = ""
 		}
 		result += sl.StringPrefix(newPrefix)
@@ -153,17 +153,17 @@ func Apply(config string, apply string) string {
 }
 
 func (c *ConfLine) Apply(a *ConfLine) ConfLine {
-	splitC := strings.Split(c.line, " ")
-	splitA := strings.Split(a.line, " ")
+	splitC := strings.Split(c.Line, " ")
+	splitA := strings.Split(a.Line, " ")
 
 	result := ConfLine{}
 	// If this is not a section start, just replace.
-	if splitC[0] == splitA[0] && len(c.subLines) == len(a.subLines) && len(c.subLines) == 0 {
-		result.line = a.line
+	if splitC[0] == splitA[0] && len(c.SubLines) == len(a.SubLines) && len(c.SubLines) == 0 {
+		result.Line = a.Line
 		return result
 	}
 	// If this is a section start, dive into it if the first line matches entirely
-	if len(c.subLines) != 0 && len(a.subLines) != 0 {
+	if len(c.SubLines) != 0 && len(a.SubLines) != 0 {
 
 	}
 
