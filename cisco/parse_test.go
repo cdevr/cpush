@@ -138,7 +138,7 @@ func TestParse(t *testing.T) {
 			ConfLine{
 				"",
 				[]ConfLine{
-					{"inerface loopback0", []ConfLine{
+					{"interface loopback0", []ConfLine{
 						{"description boembabies", nil},
 						{"ip address 1.0.0.01 255.255.255.0", nil},
 					}},
@@ -171,16 +171,18 @@ func TestParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := Parse(test.Input)
-		if diff := deep.Equal(got, test.Want); diff != nil {
-			t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Want, strings.Join(diff, "\n"))
-		}
+		t.Run(test.Description, func(t *testing.T) {
+			got := Parse(test.Input)
+			if diff := deep.Equal(got, test.Want); diff != nil {
+				t.Errorf("test %q: differences found: got\n%s\nwant\n%s\ndiff\n%s\n", test.Description, got, test.Want, strings.Join(diff, "\n"))
+			}
 
-		// And try to reverse it again.
-		backToString := got.String()
-		if diff := deep.Equal(backToString, test.Input); diff != nil {
-			t.Errorf("test %q: differences found: got\n%q\nwant\n%q\ndiff\n%s\n", test.Description, backToString, test.Input, strings.Join(diff, "\n"))
-		}
+			// And try to reverse it again.
+			backToString := got.String()
+			if diff := deep.Equal(backToString, test.Input); diff != nil {
+				t.Errorf("test %q: differences found: got\n%q\nwant\n%q\ndiff\n%s\n", test.Description, backToString, test.Input, strings.Join(diff, "\n"))
+			}
+		})
 	}
 }
 
@@ -197,12 +199,12 @@ func TestApply(t *testing.T) {
 			"hostname babies",
 			"hostname babies",
 		},
-		// {
-		// 	"simple multilevel change",
-		// 	"interface loopback0\n description loopback",
-		// 	"interface loopback0\n description newdesc",
-		// 	"interface loopback0\n description newdesc",
-		// },
+		{
+			"simple multilevel change",
+			"interface loopback0\n description loopback",
+			"interface loopback0\n description newdesc",
+			"interface loopback0\n description newdesc",
+		},
 	}
 
 	for _, test := range tests {
