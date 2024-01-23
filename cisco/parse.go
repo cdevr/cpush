@@ -122,7 +122,7 @@ func (c *ConfLine) StringPrefix(prefix string) string {
 	}
 	var result string
 	if c.Line != "" {
-		result += fmt.Sprintf("%s\n", c.Line)
+		result += fmt.Sprintf("%s%s\n", prefix, c.Line)
 	}
 	for _, sl := range c.SubLines {
 		newPrefix := fmt.Sprintf(" %s", prefix)
