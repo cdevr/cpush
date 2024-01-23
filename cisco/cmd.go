@@ -72,7 +72,9 @@ func Push(opts *options.Options, device string, username string, password string
 		addr = addr + ":22"
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), opts.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
+	defer cancel()
+
 	tcpConn, err := opts.Dial(ctx, "tcp", addr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to device %q as user %q: %v", device, username, err)
