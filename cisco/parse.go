@@ -69,52 +69,51 @@ type ConfLine struct {
 	SubLines []ConfLine
 }
 
-func Parse(conf string) ConfLine {
+// Behavior for the top-level is actually different
+func Parse(conf string) (ConfLine, error) {
 	lines := strings.Split(conf, "\n")
 	if len(lines) == 0 {
-		return ConfLine{"", nil}
+		return ConfLine{}, nil
 	}
-	return parseLines(lines, true)
+
+	topLevel, _, err := parseSection(lines, indentLevel(lines[0]))
+	if err != nil {
+		return ConfLine{}, err
+	}
+	return ConfLine{"", topLevel}, nil
 }
 
-func parseLines(lines []string, top bool) ConfLine {
-	if len(lines) == 0 {
-		return ConfLine{"", nil}
-	}
+func parseSection(lines []string, minIndent int) ([]ConfLine, int, error) {
+	var result []ConfLine
 
-	result := ConfLine{lines[0], nil}
-	if top {
-		result = ConfLine{"", nil}
-	}
-	lastIndent := indentLevel(lines[0])
-
-	for idx, line := range lines {
-		if idx == 0 && top == false {
-			continue
-		}
+	idx := 0
+	for idx < len(lines) {
+		line := lines[idx]
 		if strings.TrimSpace(line) == "" {
+			idx++
 			continue
 		}
-		if strings.TrimSpace(line) == "!" {
-			continue
+		indent := indentLevel(line)
+		if indent < minIndent {
+			return result, idx, nil
 		}
-		lineIndent := indentLevel(line)
-		switch {
-		case lineIndent > lastIndent:
-			subLine := parseLines(lines[idx:], false)
-			result.SubLines = append(result.SubLines, subLine)
-		case lineIndent < lastIndent:
-			return result
-		default:
-			if top {
-				subLine := ConfLine{line, nil}
-				result.SubLines = append(result.SubLines, subLine)
-			} else {
-				return result
+		if indent == minIndent {
+			result = append(result, ConfLine{strings.TrimSpace(line), nil})
+			idx += 1
+		}
+		if indent > minIndent {
+			section, skip, err := parseSection(lines[idx:], indent)
+			if err != nil {
+				return nil, 0, err
 			}
+			if skip == 0 {
+				return nil, 0, fmt.Errorf("failed to advance in subsection at line %q", line)
+			}
+			idx += skip
+			result[len(result)-1].SubLines = section
 		}
 	}
-	return result
+	return result, idx, nil
 }
 
 func (c *ConfLine) StringPrefix(prefix string) string {
@@ -141,12 +140,18 @@ func (c *ConfLine) String() string {
 }
 
 // Apply applies a configlet to a router config and returns the result.
-func Apply(config string, apply string) string {
-	c := Parse(config)
-	a := Parse(apply)
+func Apply(config string, apply string) (string, error) {
+	c, err := Parse(config)
+	if err != nil {
+		return "", err
+	}
+	a, err := Parse(apply)
+	if err != nil {
+		return "", err
+	}
 
 	result := c.Apply(&a)
-	return result.String()
+	return result.String(), nil
 }
 
 func (c *ConfLine) Apply(a *ConfLine) ConfLine {
