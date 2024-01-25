@@ -123,7 +123,7 @@ func parseSection(lines []string, minIndent int) ([]ConfLine, int, error) {
 	return result, idx, nil
 }
 
-func (c *ConfLine) StringPrefix(prefix string) string {
+func (c *ConfLine) stringPrefix(prefix string) string {
 	if c == nil {
 		return ""
 	}
@@ -136,14 +136,14 @@ func (c *ConfLine) StringPrefix(prefix string) string {
 		if c.Line == "" {
 			newPrefix = ""
 		}
-		result += sl.StringPrefix(newPrefix)
+		result += sl.stringPrefix(newPrefix)
 	}
 
 	return result
 }
 
 func (c *ConfLine) String() string {
-	return strings.TrimSuffix(c.StringPrefix(""), "\n")
+	return strings.TrimSuffix(c.stringPrefix(""), "\n")
 }
 
 // Apply applies a configlet to a router config and returns the result.
