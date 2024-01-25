@@ -290,6 +290,18 @@ func TestApply(t *testing.T) {
 			"interface loopback0\n description newdesc",
 			"interface loopback0\n description newdesc",
 		},
+		{
+			"two multilevel changes",
+			"interface loopback0\n description loopback0\ninterface loopback1\n description loopback1",
+			"interface loopback0\n description boembabies0\ninterface loopback1\n description boembabies1",
+			"interface loopback0\n description boembabies0\ninterface loopback1\n description boembabies1",
+		},
+		{
+			"two multilevel changes changing order",
+			"interface loopback0\n description loopback0\ninterface loopback1\n description loopback1",
+			"interface loopback1\n description boembabies1\ninterface loopback0\n description boembabies0",
+			"interface loopback0\n description boembabies0\ninterface loopback1\n description boembabies1",
+		},
 	}
 
 	for _, test := range tests {
