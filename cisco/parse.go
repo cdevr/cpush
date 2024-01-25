@@ -69,6 +69,13 @@ type ConfLine struct {
 	SubLines []ConfLine
 }
 
+func (c *ConfLine) IsLeaf() bool {
+	if c == nil {
+		return true
+	}
+	return len(c.SubLines) != 0
+}
+
 // Behavior for the top-level is actually different
 func Parse(conf string) (ConfLine, error) {
 	lines := strings.Split(conf, "\n")
@@ -154,18 +161,18 @@ func Apply(config string, apply string) (string, error) {
 	return result.String(), nil
 }
 
-func (c *ConfLine) Apply(a *ConfLine) ConfLine {
+func (c *ConfLine) Apply(other *ConfLine) ConfLine {
 	splitC := strings.Split(c.Line, " ")
-	splitA := strings.Split(a.Line, " ")
+	splitA := strings.Split(other.Line, " ")
 
 	result := ConfLine{}
 	// If this is not a section start, just replace.
-	if splitC[0] == splitA[0] && len(c.SubLines) == len(a.SubLines) && len(c.SubLines) == 0 {
-		result.Line = a.Line
+	if splitC[0] == splitA[0] && len(c.SubLines) == len(other.SubLines) && len(c.SubLines) == 0 {
+		result.Line = other.Line
 		return result
 	}
 	// If this is a section start, dive into it if the first line matches entirely
-	if len(c.SubLines) != 0 && len(a.SubLines) != 0 {
+	if len(c.SubLines) != 0 && len(other.SubLines) != 0 {
 
 	}
 
