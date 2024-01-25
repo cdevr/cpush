@@ -176,6 +176,12 @@ func (c *ConfLine) Apply(other *ConfLine) {
 						continue outer
 					}
 				}
+			} else {
+				for _, csl := range c.SubLines {
+					if osl.Line == csl.Line {
+						csl.Apply(&osl)
+					}
+				}
 			}
 		}
 	}
