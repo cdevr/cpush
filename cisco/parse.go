@@ -73,7 +73,7 @@ func (c *ConfLine) IsLeaf() bool {
 	if c == nil {
 		return true
 	}
-	return len(c.SubLines) != 0
+	return len(c.SubLines) == 0
 }
 
 // Behavior for the top-level is actually different
@@ -157,24 +157,26 @@ func Apply(config string, apply string) (string, error) {
 		return "", err
 	}
 
-	result := c.Apply(&a)
-	return result.String(), nil
+	c.Apply(&a)
+	return c.String(), nil
 }
 
-func (c *ConfLine) Apply(other *ConfLine) ConfLine {
-	splitC := strings.Split(c.Line, " ")
-	splitA := strings.Split(other.Line, " ")
-
-	result := ConfLine{}
-	// If this is not a section start, just replace.
-	if splitC[0] == splitA[0] && len(c.SubLines) == len(other.SubLines) && len(c.SubLines) == 0 {
-		result.Line = other.Line
-		return result
+func (c *ConfLine) Apply(other *ConfLine) {
+	if c.Line == other.Line {
+		// process sublines
+	outer:
+		for _, osl := range other.SubLines {
+			// TODO needs special case handling, like "ip address" having a space but should still be considered one word
+			oslFirstWord := strings.Split(osl.Line, " ")[0]
+			if osl.IsLeaf() {
+				for cIndex, csl := range c.SubLines {
+					cslFirstWord := strings.Split(csl.Line, " ")[0]
+					if oslFirstWord == cslFirstWord && csl.IsLeaf() {
+						c.SubLines[cIndex].Line = osl.Line
+						continue outer
+					}
+				}
+			}
+		}
 	}
-	// If this is a section start, dive into it if the first line matches entirely
-	if len(c.SubLines) != 0 && len(other.SubLines) != 0 {
-
-	}
-
-	return result
 }
