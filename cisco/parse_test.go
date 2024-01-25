@@ -302,6 +302,12 @@ func TestApply(t *testing.T) {
 			"interface loopback1\n description boembabies1\ninterface loopback0\n description boembabies0",
 			"interface loopback0\n description boembabies0\ninterface loopback1\n description boembabies1",
 		},
+		{
+			"multilevel, multiple statements",
+			"interface loopback0\n ip address 1.0.0.1 255.255.255.255\n description loopback0\n shutdown",
+			"interface loopback0\n description boembabies",
+			"interface loopback0\n ip address 1.0.0.1 255.255.255.255\n description boembabies\n shutdown",
+		},
 	}
 
 	for _, test := range tests {
