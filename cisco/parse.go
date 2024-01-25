@@ -166,7 +166,8 @@ func (c *ConfLine) Apply(other *ConfLine) {
 		// process sublines
 	outer:
 		for _, osl := range other.SubLines {
-			// TODO needs special case handling, like "ip address" having a space but should still be considered one word
+			// TODO handle "no" prefix.
+			// TODO needs special case handling, like "ip address" having a space but should still be considered one word.
 			oslFirstWord := strings.Split(osl.Line, " ")[0]
 			if osl.IsLeaf() {
 				for cIndex, csl := range c.SubLines {
