@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"os/user"
+	"path"
 	"runtime"
 	"sort"
 	"strings"
@@ -340,11 +341,38 @@ func isFlagPresent(name string) bool {
 	return found
 }
 
-// ResolveFilePrefix will read a string, and if it starts with "file:" will replace it with the contents
-// of the file specified.
+// ResolveFile will read a file path, and if it starts with "file:" will replace it with the contents
+func ResolveFile(filepath string) (string, error) {
+	user, err := user.Current()
+	if err != nil {
+		return "", fmt.Errorf("error getting user: %w", err)
+	}
+	dir := user.HomeDir
+
+	if strings.HasPrefix(filepath, "~/") {
+		filepath = path.Join(dir, filepath[2:])
+	}
+
+	if path.IsAbs(filepath) {
+		return filepath, nil
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("error getting current directory: %w", err)
+	}
+
+	filepath = path.Join(cwd, filepath)
+
+	return filepath, nil
+}
+
+// ResolveFilePrefix will read a router specification,
+// and if it starts with "file:" will replace it with the
+// contents of the file specified.
 func ResolveFilePrefix(s string) (string, error) {
 	if fn := strings.TrimPrefix(s, "file:"); fn != s {
-		bts, err := os.ReadFile(fn)
+		bts, err := os.ReadFile(ResolveFile(fn))
 		if err != nil {
 			return "", err
 		}
