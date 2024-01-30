@@ -372,7 +372,11 @@ func ResolveFile(filepath string) (string, error) {
 // contents of the file specified.
 func ResolveFilePrefix(s string) (string, error) {
 	if fn := strings.TrimPrefix(s, "file:"); fn != s {
-		bts, err := os.ReadFile(ResolveFile(fn))
+		rfn, err := ResolveFile(fn)
+		if err != nil {
+			return "", err
+		}
+		bts, err := os.ReadFile(rfn)
 		if err != nil {
 			return "", err
 		}
