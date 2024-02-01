@@ -214,7 +214,7 @@ func DoManyDevices(opts *options.Options, concurrentLimit int, devices []string,
 
 		expectedFinish := time.Now().Add(expectedDuration).Round(time.Second)
 
-		expectedDurationStr := fmt.Sprintf("%s", expectedDuration)
+		expectedDurationStr := expectedDuration.String()
 		expectedFinishStr := fmt.Sprintf("%s", expectedFinish)
 		if timeElapsed < 2*time.Second || endedCount < 1 {
 			timeElapsed = 0
