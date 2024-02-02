@@ -432,7 +432,7 @@ Other flags are:`)
 		*command = strings.Join(flag.Args()[1:], " ")
 	}
 
-	if *command == "" && *push == "" && *interactive == false {
+	if *command == "" && *push == "" && !*interactive {
 		log.Printf("you didn't pass in a command or a confliglet")
 		return
 	}
