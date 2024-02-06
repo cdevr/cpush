@@ -208,7 +208,7 @@ func DoManyDevices(opts *options.Options, concurrentLimit int, devices []string,
 		remaining := len(devices) - inProgress - endedCount - skippedCount
 		progress := float64(endedCount) / float64(len(devices)-skippedCount)
 
-		timeElapsed := time.Now().Sub(startTime).Round(time.Second)
+		timeElapsed := time.Since(startTime).Round(time.Second)
 		expectedDuration := time.Duration(float64(timeElapsed) / progress).Round(time.Second)
 
 		expectedFinish := time.Now().Add(expectedDuration).Round(time.Second)
