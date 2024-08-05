@@ -1,55 +1,59 @@
-# CPUSH
+**Welcome to CPUSH: Go Language Tool for managing network devices using SSH**
 
-A go language tool to work with SSH to cisco devices.
+CPUSH is an easy-to-use command-line tool that allows you to interact with Cisco devices via SSH, without needing to log in. It also comes with password caching capabilities.
 
-It allows to collect the output of commands directly, without logging in. It can cache passwords.
+**Getting Started**
 
-# To install
+To install CPUSH, simply run the following command:
 
-    go install github.com/cdevr/cpush/cmd/cpush@latest
+```bash
+go install github.com/cdevr/cpush/cmd/cpush@latest
+```
 
-# Example execution
+**Using CPUSH for the First Time**
 
-    cpush --device ip-rtr-ch-1 --cmd 'show version'
+Here are a few examples of how you can use CPUSH to retrieve output from Cisco devices:
 
-You can also pass parameters just directly if just specifying device and command:
+* Run a specific command on a device: `cpush --device ip-rtr-ch-1 --cmd 'show version'`
+* Pass parameters directly (e.g., specify just the device and command): `cpush ip-rtr-ch-1 show version`
+* Enable an interactive session with a router: `cpush --device ip-rtr-ch-1 -i`
 
-    cpush ip-rtr-ch-1 show version
+**Shortcuts**
 
-It also supports just giving you an interactive session on this router:
+If you're familiar with CPUSH, you can use shortcuts to simplify your workflow:
 
-    cpush --device ip-rtr-ch-1 -i
+* Run a single command with all the necessary parameters: `cpush ip-rtr-ch-1 sh ver`
+* Use the `-i` flag for interactive sessions: `cpush -i ip-rtr-ch-1`
 
-Or the shortcut:
+**Running Multiple Commands on Multiple Devices**
 
-    cpush ip-rtr-ch-1
+You can list multiple devices in a file called "devices_shver" and run commands on each one. Here's an example:
 
-In this case, cpush will interpret the first argument as the router name, and subsequent arguments will be used to send a command.
+```bash
+# cat devices_shver
+router1
+router2
+# cpush --device file:devices_shver --cmd "show version" --output "shver_%s"
+```
 
-# Run commands on many devices
+This will create two files, `shver_router1` and `shver_router2`, containing the output from each device. This
+will work fine, even if there's thousands of devices in the device list file.
 
-List a bunch of devices in a file called "devices_shver". For example router1 and router2
+**Configuring Devices**
 
-    # cat devices_shver
-    router1
-    router2
-    # cpush --device file:devices_shver --cmd "show version" --output "shver_%s"
-    # ls
-    devices_shver
-    shver_router1
-    shver_router2
-    #
+CPUSH has special logic to apply configuration changes "atomically" (almost atomically). The --push flag.
+Here's an example:
 
-This will create the files "shver_router1" and "shver_router2" that contain the output of the listed devices.
+```bash
+# cpush --device ip-rtr-1 --push 'int lo 99; ip addr 1.0.0.1 255.255.255.0'
+```
 
-# Configure devices
+**Developing on This Repository**
 
-Cpush has special logic to get close to atomic application of configuration pushes.
+To take full advantage of this repository, please configure your Git hooks by running the following command:
 
-    cpush --device ip-rtr-1 --push 'int lo 99; ip addr 1.0.0.1 255.255.255.0'
+```bash
+git config core.hooksPath .githooks
+```
 
-# Developing on this repository
-
-This repository uses git hooks. Please configure the git repository to actually use them.
-
-    git config core.hooksPath .githooks
+This will enable the hooks to run automatically when you push changes to the repository.
