@@ -29,7 +29,7 @@ import (
 
 //go:generate go run tagBuild.go
 
-// ANSI code to erase the current line and put the cursor at the beginning.
+// ANSI code to erase the current line and put the cursor at the beginning of the line.
 const clearLine = "\033[2K\r"
 
 var (
@@ -66,6 +66,7 @@ var (
 	socks = flag.String("socks", "", "proxy to use")
 )
 
+// GetUser gets the current logged in user.
 func GetUser() string {
 	cur, err := user.Current()
 	if err != nil {
@@ -98,6 +99,7 @@ func FillOutputFilenameTemplate(fn string, router string) string {
 	return strings.ReplaceAll(fn, "%s", router)
 }
 
+// A function that will be executed against many devices with retries, one at a time.
 type DoFunc func(opts *options.Options, device string, username string, password string, param string, timeout time.Duration) (string, error)
 
 // DoManyDevices executes a push or a command on many devices, prints the output.
@@ -330,6 +332,7 @@ func filterEmptyDevices(devices []string) []string {
 	return filteredDevices
 }
 
+// isFlagPresent returns true if this particular flag was passed into the commandline calling the program.
 func isFlagPresent(name string) bool {
 	found := false
 	flag.Visit(func(f *flag.Flag) {
@@ -385,6 +388,7 @@ func ResolveFilePrefix(s string) (string, error) {
 }
 
 func main() {
+	// Allow default parameters in the ~/.cpush parameter file.
 	configfile.ParseConfigFile("~/.cpush")
 	flag.Parse()
 

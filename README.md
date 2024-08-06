@@ -48,6 +48,10 @@ Here's an example:
 # cpush --device ip-rtr-1 --push 'int lo 99; ip addr 1.0.0.1 255.255.255.0'
 ```
 
+**Config file for cpush itself**
+
+You can put default options for cpush in a file called `~/.cpush`, for example specifying a proxy server.
+
 **Developing on This Repository**
 
 To take full advantage of this repository, please configure your Git hooks by running the following command:
