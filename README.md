@@ -50,7 +50,13 @@ Here's an example:
 
 **Config file for cpush itself**
 
-You can put default options for cpush in a file called `~/.cpush`, for example specifying a proxy server.
+You can put default options for cpush in a file called `~/.cpush`, for example specifying a proxy server. For example:
+
+```
+socks: 81.83.85.87:3333
+```
+
+You can put a default value for any flag you want. So just use cpush --help to find out what options are supported.
 
 **Developing on This Repository**
 
