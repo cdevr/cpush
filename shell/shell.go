@@ -13,6 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
+// respondInteractive responds to ssh "keyboard-interactive" password requests according to the cpush config.
 func respondInteractive(password string) func(user, instruction string, questions []string, echos []bool) ([]string, error) {
 	return func(user, instruction string, questions []string, echos []bool) ([]string, error) {
 		var answers []string
@@ -25,6 +26,7 @@ func respondInteractive(password string) func(user, instruction string, question
 
 // sshConfig returns additional ssh configuration options for cisco routers, such as allowing bad ciphers used by Cisco.
 func sshConfig() ssh.Config {
+	// Needed for compatibility with older cisco devices.
 	extraCiphers := []string{"aes128-cbc", "3des-cbc", "aes192-cbc", "aes256-cbc"}
 
 	config := ssh.Config{}
@@ -35,7 +37,7 @@ func sshConfig() ssh.Config {
 	return config
 }
 
-// Interactive starts a remote shell and connects it to the terminal.
+// Interactive starts a remote shell and connects it to the terminal, allowing the user to use cpush as ssh.
 func Interactive(opts *options.Options, device string, username string, password string) error {
 	log.Printf("starting interactive shell")
 	config := &ssh.ClientConfig{
@@ -78,7 +80,7 @@ func Interactive(opts *options.Options, device string, username string, password
 		return fmt.Errorf("failed to get pty on device %q: %v", device, err)
 	}
 
-	// Set the terminal to raw mode so single keys work.
+	// Set the terminal to raw mode so single keypresses work.
 	oldTerminalState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to set Terminal to raw mode: %v", err)
