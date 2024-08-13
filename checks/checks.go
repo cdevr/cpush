@@ -2,7 +2,6 @@ package checks
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/cdevr/cpush/textfsm"
 )
@@ -121,9 +120,10 @@ func CheckBgpSum(router string, cmdResults map[string]string) ([]CheckResult, er
 	}
 
 	for _, neighbor := range bgpSum {
-		// Neighbor status should be the number of prefixes received. If it's anything else ("Idle", or "Connect", or "Active"), that's bad.
-		if _, err := strconv.Atoi(neighbor.Status); err == nil {
-			results = append(results, CheckResult{checkName, router, fmt.Sprintf("%s: idle status %q", neighbor.RemoteIp, neighbor.Status)})
+		// Neighbor status should be empty (meaning we got a numeric prefix count in ReceivedV4).
+		// If Status is non-empty ("Idle", "Connect", "Active"), that's bad.
+		if neighbor.Status != "" {
+			results = append(results, CheckResult{checkName, router, fmt.Sprintf("%s: bad status %q", neighbor.RemoteIp, neighbor.Status)})
 		}
 	}
 
