@@ -170,6 +170,7 @@ func (c *ConfLine) Apply(other *ConfLine) {
 			// TODO needs special case handling, like "ip address" having a space but should still be considered one word.
 			oslFirstWord := strings.Split(osl.Line, " ")[0]
 			if osl.IsLeaf() {
+				// Try to find and update existing leaf with same first word
 				for cIndex, csl := range c.SubLines {
 					cslFirstWord := strings.Split(csl.Line, " ")[0]
 					if oslFirstWord == cslFirstWord && csl.IsLeaf() {
@@ -177,13 +178,26 @@ func (c *ConfLine) Apply(other *ConfLine) {
 						continue outer
 					}
 				}
+				// No matching leaf found, append it
+				c.SubLines = append(c.SubLines, osl)
 			} else {
-				for _, csl := range c.SubLines {
+				// Try to find and recurse into matching non-leaf section
+				found := false
+				for cIndex, csl := range c.SubLines {
 					if osl.Line == csl.Line {
-						csl.Apply(&osl)
+						c.SubLines[cIndex].Apply(&osl)
+						found = true
+						break
 					}
+				}
+				// No matching section found, append it
+				if !found {
+					c.SubLines = append(c.SubLines, osl)
 				}
 			}
 		}
+	} else {
+		// Different top-level lines - need to add new sections to parent
+		// This is handled in the calling Apply function which processes all top-level sections
 	}
 }

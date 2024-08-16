@@ -309,22 +309,53 @@ func TestApply(t *testing.T) {
 			"interface loopback0\n ip address 1.0.0.1 255.255.255.255\n description boembabies\n shutdown",
 		},
 		{
-			"BUG: adding new subline to existing section",
+			"adding new subline to existing section",
 			"interface loopback0\n description loopback0",
 			"interface loopback0\n description loopback0\n ip address 1.0.0.1 255.255.255.0",
 			"interface loopback0\n description loopback0\n ip address 1.0.0.1 255.255.255.0",
 		},
 		{
-			"BUG: adding completely new section",
+			"adding completely new section",
 			"interface loopback0\n description loopback0",
 			"interface loopback1\n description loopback1",
 			"interface loopback0\n description loopback0\ninterface loopback1\n description loopback1",
 		},
 		{
-			"BUG: adding new top-level line",
+			"adding new top-level line",
 			"hostname router1",
 			"ntp server 1.2.3.4",
 			"hostname router1\nntp server 1.2.3.4",
+		},
+		{
+			"complex merge: update existing + add new sections and lines",
+			dedent(`
+			hostname oldname
+			interface loopback0
+			 description old description
+			 ip address 1.0.0.1 255.255.255.0
+			interface loopback1
+			 description loopback1`),
+			dedent(`
+			hostname newname
+			interface loopback0
+			 description new description
+			 shutdown
+			interface loopback2
+			 description loopback2
+			 ip address 3.0.0.1 255.255.255.0
+			ntp server 1.2.3.4`),
+			dedent(`
+			hostname newname
+			interface loopback0
+			 description new description
+			 ip address 1.0.0.1 255.255.255.0
+			 shutdown
+			interface loopback1
+			 description loopback1
+			interface loopback2
+			 description loopback2
+			 ip address 3.0.0.1 255.255.255.0
+			ntp server 1.2.3.4`),
 		},
 	}
 
