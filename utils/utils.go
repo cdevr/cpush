@@ -7,7 +7,7 @@ import (
 )
 
 func ReplaceFile(filename, text string) error {
-	// Open the file in append mode with standard permissions (0666 should cause UMAKS to be applied)
+	// Open the file in append mode with standard permissions (0666 should cause UMASK to be applied)
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func ReplaceFile(filename, text string) error {
 }
 
 func AppendToFile(filename, text string) error {
-	// Open the file in append mode with standard permissions (0666 should cause UMAKS to be applied)
+	// Open the file in append mode with standard permissions (0666 should cause UMASK to be applied)
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
