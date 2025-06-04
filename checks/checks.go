@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/cdevr/cpush/textfsm"
 )
@@ -36,6 +37,11 @@ var Checks = []CheckData{
 	// Check interface transceiver
 	// Check license all
 	// Check standby HSRP
+	{
+		"Bootvar",
+		[]string{"show version"},
+		CheckBootvar,
+	},
 }
 
 func GetCheckCommands() []string {
@@ -103,6 +109,38 @@ func CheckInterfaces(router string, cmdResults map[string]string) ([]CheckResult
 			results = append(results, CheckResult{checkName, router, fmt.Sprintf("%s: %s output errors", ir.Intf, ir.OutputErrors)})
 		}
 	}
+	return results, nil
+}
+
+func CheckBootvar(router string, cmdResults map[string]string) ([]CheckResult, error) {
+	var results []CheckResult
+	checkName := "CheckBootvar"
+
+	showVersionOutput, ok := cmdResults["show version"]
+	if !ok {
+		results = append(results, CheckResult{checkName, router, "failed to get 'show version' command output"})
+		return results, nil
+	}
+
+	found := false
+	for _, line := range strings.Split(showVersionOutput, "\n") {
+		if strings.Contains(strings.ToLower(line), strings.ToLower("Configuration register is")) {
+			found = true
+			parts := strings.Fields(line)
+			if len(parts) > 0 {
+				actualValue := parts[len(parts)-1]
+				if actualValue != "0x2102" {
+					results = append(results, CheckResult{checkName, router, fmt.Sprintf("Configuration register is %s, expected 0x2102", actualValue)})
+				}
+			}
+			break // Found the line, no need to check further
+		}
+	}
+
+	if !found {
+		results = append(results, CheckResult{checkName, router, "Configuration register line not found in 'show version' output"})
+	}
+
 	return results, nil
 }
 
